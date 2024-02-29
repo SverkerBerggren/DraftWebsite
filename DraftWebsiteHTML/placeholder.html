@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="StyleSheet.css">
+    <title>Document</title>
+    
+    <script id="jquery" src="jquery-3.6.3.js"></script>
+</head>
+<body>
+    <header>
+        <p>Drafting</p>
+    </header>
+    <main>
+        <form  id="StartForm" >
+            <fieldset>
+
+                <legend>Select parameters for draft</legend>
+                <label id="LabelInputFieldCardPerPack" for="InputFieldCardPerPack">Cards per pack</label><br>
+                <input type="number" id="InputFieldCardPerPack" name="InputFieldCardPerPack" value="1" min="1"><br>
+
+                <label id="LabelInputFieldAmountPerPack" for="InputFieldAmountOfPack">Amount of packs</label><br>
+                <input type="number" id="InputFieldAmountOfPack" name="InputFieldAmountOfPack"value="1" min="1"><br>
+
+                
+                <label id="LabelInputFieldAmountOfPlayers" for="InputFieldAmountOfPlayers">Amount of players</label><br>
+                <input type="number" id="InputFieldAmountOfPlayers" name="InputFieldAmountOfPlayers"value="2" min="2"><br>
+                
+
+                <div id="FormButtonDiv">
+                    <button id="StartButton">Start</button>
+                </div>
+            
+            </fieldset>
+        </form>
+        
+        <div id="draftableCardsSection">
+        </div>
+    </main>
+    <div id = "downloadButtonDiv">
+        
+        <button id="Downloadbutton">Donwload deck</button>
+    </div>
+
+    <footer id = "DraftedCardContainer" class="DraftedCardContainer"> 
+        <legend>Drafted cards   </legend>
+    </footer>
+
+
+
+    
+
+</body>
+<img id="HighLightCard" src="CardImages/Ash.webp">
+<script  src="Script.js"></script>
+
+</html>

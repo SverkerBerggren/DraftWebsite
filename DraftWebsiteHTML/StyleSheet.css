@@ -1,0 +1,102 @@
+:root{
+    --widthCardPorportion: 0.68604651162;
+    --heightCardSize: 400px; 
+}
+
+
+
+header{
+    font-size: 5vb;
+    text-align: center;
+
+}
+
+
+#HighLightCard{
+    position: absolute;
+
+    top: 15%;
+    left: 10%;
+}
+
+form{
+    
+    background-color: bisque;
+    
+    padding: 10px;
+
+    align-items: center;
+
+}
+
+#FormButtonDiv{
+
+    display: flex;
+    padding-top: 10px;
+    justify-content: center;
+}
+
+#draftableCardsSection{
+
+    overflow: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    height: fit-content;
+
+    max-height: 64vh;
+    max-width: 70vw;
+
+
+}
+#HighLightCard{
+    width: 475px;
+    height: 700px;
+    pointer-events: none;
+}
+#downloadButtonDiv
+{
+    display: flex;
+    justify-content: center;
+    
+}
+
+main{    
+    display: flex;
+    height: auto;
+    justify-content: center;
+    min-height: 74%;
+    max-height:75%;
+
+}
+footer{
+    position: absolute;
+    padding: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 16vh;
+    max-height: 16vh;
+    overflow: auto;
+    bottom: 0;
+    display: block;
+    text-align: center;
+    font-size: 5vb;
+    background-color: bisque;
+}
+
+.DraftableCard{
+    padding: 10px;  
+    float: left;
+
+    flex: 800px;
+    height: var(--heightCardSize);
+}
+
+.DraftedCard{
+    padding: 10px;  
+    float: left;
+    
+
+    height: 200px;
+    width: var((--heightCardSize) * var(--widthCardPorportion));
+}
