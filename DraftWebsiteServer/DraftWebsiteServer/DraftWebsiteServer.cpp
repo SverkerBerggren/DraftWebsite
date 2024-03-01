@@ -3,10 +3,11 @@
 
 #include "DraftWebsiteServer.h"
 
-using namespace std;
 
 int main()
 {
-	cout << "Hello CMake." << endl;
+	std::cout << "Hello CMake." << std::endl;
+
+	std::cout << "Hej igen " << std::endl;
 	return 0;
 }
