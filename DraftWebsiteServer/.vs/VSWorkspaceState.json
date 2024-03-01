@@ -13,9 +13,7 @@
   },
   "ExpandedNodes": [
     "",
-    "\\DraftWebsiteServer",
-    "\\out",
-    "\\out\\build"
+    "\\DraftWebsiteServer"
   ],
   "SelectedNode": "\\DraftWebsiteServer\\DraftWebsiteServer.cpp",
   "PreviewInSolutionExplorer": false

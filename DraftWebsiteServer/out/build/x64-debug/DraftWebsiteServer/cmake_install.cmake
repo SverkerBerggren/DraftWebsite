@@ -1,8 +1,8 @@
-# Install script for directory: D:/DraftWebsite/DraftWebsiteServer/DraftWebsiteServer
+# Install script for directory: D:/DraftWebsite/DraftWebsite/DraftWebsiteServer/DraftWebsiteServer
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "D:/DraftWebsite/DraftWebsiteServer/out/install/x64-debug")
+  set(CMAKE_INSTALL_PREFIX "D:/DraftWebsite/DraftWebsite/DraftWebsiteServer/out/install/x64-debug")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
