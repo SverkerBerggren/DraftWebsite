@@ -1,4 +1,5 @@
 
+
 let draftableCardSection = document.getElementById("draftableCardsSection");
 
 let draftedCardsSection = document.getElementById("DraftedCardContainer");
@@ -24,6 +25,8 @@ TestaFunktioner();
 HideHighlightCard();
 
 
+
+
 const simulatedPacks = [];
 const DATA_INDEX = "data-index";
 
@@ -45,7 +48,40 @@ startButton.onclick = StartDraft;
 //ShowPack(simulatedPacks[0]);
 
 
+TestGetMethod();
+
 downloadButton.hidden = true;
+
+async function TestGetMethod()
+{   
+    
+   // request = new Request("http://localhost",{ method: "POST", headers:{"content-type": "text/plain "},  body:  "hej" });
+
+
+ //   request = new Request("http://localhost",{ method: "POST",   body:  "hej" });
+    
+    
+   // response = await fetch("http://localhost/1234",request);
+  // const response = await fetch("http://example.com/movies.json");
+   //const movies = await response.json();
+  // console.log(movies);
+
+
+    response2  = await fetch("http://localhost:1234/hi", {
+        method: "GET", // *GET, POST, PUT, DELETE, etc.
+        headers: {
+          "Content-Type": "text/plain",
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+    //response3  = await fetch("http://localhost:1234/hi");
+    
+    console.log(response2);
+
+}
+
+
 
 function StartDraft()
 {

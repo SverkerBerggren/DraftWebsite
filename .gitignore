@@ -1,4 +1,2 @@
-#Ignore generated files 
-/DraftWebsiteServer/out/
-/DraftWebsiteServer/.vs/
-
+DraftWebsiteServer/out/*
+DraftWebsiteServer/.vs/*
