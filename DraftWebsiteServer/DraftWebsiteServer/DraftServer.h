@@ -5,7 +5,9 @@
 
 class DraftServer
 {
+private: 
 
+    void LoadAvailableCards();
     
 public: 
     httplib::Server svr;

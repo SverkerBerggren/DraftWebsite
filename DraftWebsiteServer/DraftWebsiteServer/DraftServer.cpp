@@ -1,5 +1,5 @@
 #include "DraftServer.h"
-
+#include <filesystem>
 using namespace httplib;
 void DraftServer::Start()
 {
@@ -41,3 +41,7 @@ void DraftServer::Start()
     svr.listen("localhost", 1234);
 }
 
+void DraftServer::LoadAvailableCards()
+{
+    std::
+}

@@ -22,7 +22,7 @@ private:
 	int cardsPerPack;
 	int amountOfPacks; 
 
-	void InitializeLobby(std::vector <std::string> playersInLobby );
+	void InitializeLobby(const std::vector <std::string> &playersInLobby );
 	
 	
 public: 
@@ -30,15 +30,15 @@ public:
 
 
 
-	void PickCard(std::string playerId, int index);
+	void PickCard(const std::string &playerId, int index);
 
-	std::string GetDraftableCards(std::string playerId);
+	std::string GetDraftableCards(const std::string &playerId);
 
 	void StartNewRotation(bool allPlayersHavePicked);
 
 	
 
-	Lobby(std::vector<std::string> connectedPlayers,int cardsPerPack, int amountOfPacks)
+	Lobby(const std::vector<std::string> &connectedPlayers ,int cardsPerPack, int amountOfPacks)
 	{
 		this->connectedPlayers = connectedPlayers;
 		this->cardsPerPack = cardsPerPack;
