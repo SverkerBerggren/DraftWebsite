@@ -12,6 +12,10 @@ let startButton = document.getElementById("StartButton");
 
 let startForm = document.getElementById("StartForm");
 
+let joinButton = document.getElementById("JoinButton");
+let joinInput = document.getElementById("InputFieldJoin");
+
+
 let inputCardsPerPack = document.getElementById("InputFieldCardPerPack");
 let inputAmountOfPacks = document.getElementById("InputFieldAmountOfPack");
 let inputAmountOfPlayers = document.getElementById("InputFieldAmountOfPlayers");
@@ -24,7 +28,7 @@ TestaFunktioner();
 
 HideHighlightCard();
 
-
+joinButton.onclick = JoinLobby;
 
 
 const simulatedPacks = [];
@@ -41,12 +45,13 @@ const { signal } = controller;
 let packsDrafted = 0; 
 
 
-AddAvailableCards();
+//AddAvailableCards();
 
 startButton.onclick = StartDraft;
 
 //ShowPack(simulatedPacks[0]);
 
+HostLobby();
 
 TestGetMethod();
 
@@ -54,18 +59,6 @@ downloadButton.hidden = true;
 
 async function TestGetMethod()
 {   
-    
-   // request = new Request("http://localhost",{ method: "POST", headers:{"content-type": "text/plain "},  body:  "hej" });
-
-
- //   request = new Request("http://localhost",{ method: "POST",   body:  "hej" });
-    
-    
-   // response = await fetch("http://localhost/1234",request);
-  // const response = await fetch("http://example.com/movies.json");
-   //const movies = await response.json();
-  // console.log(movies);
-
 
     response2  = await fetch("http://localhost:1234/hi", {
         method: "GET", // *GET, POST, PUT, DELETE, etc.
@@ -74,13 +67,34 @@ async function TestGetMethod()
           // 'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
-
-    //response3  = await fetch("http://localhost:1234/hi");
     
-    console.log(response2);
+    console.log(response2.text());
 
 }
+async function HostLobby()
+{
+    response = await fetch("http://localhost:1234/HostLobby",{
+        method: "Post"
+    }).then((response) => response.text()).then((text) =>{
+        console.log(text);
+    });
 
+}
+async function JoinLobby()
+{
+    response = await fetch("http://localhost:1234/JoinLobby",{
+        method: "Post",
+        body: joinInput.value
+        }).then((response) => response.text()).then((text) => {
+            if(text == "Accepted")
+            {
+                startForm.remove();
+            }
+
+            console.log(text);
+          });
+      
+}
 
 
 function StartDraft()
@@ -93,13 +107,34 @@ function StartDraft()
     
     
     startForm.remove();
-    StartInitialization();
 
-    ShowPack(simulatedPacks[0]);
+  //  ShowDraftableCards();
+  ShowDraftableCardsServer();
+   // StartInitialization();
+
+   // ShowPack(simulatedPacks[0]);
 
 }
 
 
+async function ShowDraftableCardsServer()
+{
+    response = await fetch("http://localhost:1234/AvailableCards",{
+    method: "Get"
+    }).then((response) => response.text()).then((text) => {
+        console.log(text);
+        cards = text.split(":");
+        console.log(cards);
+
+        for(i = 0; i  < cards.length; i++)
+        {
+            CreateDraftableCard(cards[i],i);
+        }
+      });
+  
+    
+
+}
 
 function StartInitialization()
 {   

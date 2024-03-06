@@ -3,10 +3,11 @@
 using namespace httplib;
 void DraftServer::Start()
 {
-    svr.set_mount_point("", "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML");
+    svr.set_mount_point("/", "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML");
 
+    LoadAvailableCards();
 
-    svr.Get("/", [](const httplib::Request& req, Response& res) {
+    svr.Get("/", [&](const httplib::Request& req, Response& res) {
         std::cout << "hej getta html" << std::endl;
         std::cout << " Cookie " << req.get_header_value("Cookie") << std::endl;
 
@@ -17,20 +18,80 @@ void DraftServer::Start()
         ifStream.seekg(0, ifStream.beg);
         ifStream.read(html.data(), html.size());
         res.set_content(html, "text/html");
-        res.set_header("Set-Cookie", "PlayerId=forstaSpelaren; Expires=Thu, 21 Apr 2024 07:28:00 GMT;");
-
+        if (req.get_header_value("Cookie") == "")
+        {
+            res.set_header("Set-Cookie", "PlayerId=" + std::to_string(playerCookieId) + "; Expires=Thu, 21 Apr 2024 07:28:00 GMT;");
+        }
+        playerCookieId += 1;
         std::cout << html.size() << std::endl;
         });
-
-    svr.Get("/DraftableCards", [](const httplib::Request& req, Response& res) {
+    svr.Get("/DraftableCards", [&](const httplib::Request& req, Response& res) {
 
         std::string playerId = req.get_header_value("Cookie");
 
-        std::ifstream ifStream = std::ifstream("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML\\placeholder.html");
-
+        if (playerToLobby.find(playerId) != playerToLobby.end())
+        {
+            res.set_content(activeLobbies[playerToLobby[playerId]].GetDraftableCardsPlayer(playerId),"text/plain");
+        }
+        //std::ifstream ifStream = std::ifstream("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML\\placeholder.html");
+   //     res.set_content(stringToReturn, "text/plain")
 
         });
+    svr.Get("/AvailableCards", [&](const httplib::Request& req, Response& res) {
 
+        std::string stringToReturn = "";
+
+        for (int i = 0; i < availableCards.size(); i++)
+        {
+            stringToReturn += availableCards[i];
+            if (i != availableCards.size() - 1)
+            {
+                stringToReturn += ":";
+            }
+        }
+        res.status = StatusCode::OK_200;
+        std::cout << "put grejen " << stringToReturn << std::endl;
+        res.set_content(stringToReturn, "text/plain");
+        });
+
+    std::function<void(const Request&, Response&)> hostLobbyFunction = [&](const Request&, Response&) {&DraftServer::HostLobbyRequest; };
+  //  svr.Post("/HostLobby", hostLobbyFunction);
+
+    svr.Post("/HostLobby", [&](const httplib::Request& req, Response& res) {
+  
+            std::string playerId = req.get_header_value("Cookie");
+  
+            if (playerToLobby.find(playerId) == playerToLobby.end())
+            {
+  
+                res.set_content(HostLobby(playerId), "text/plain");
+            }
+            else
+            {
+                res.set_content("redan i lobby", "text/plain");
+
+            }
+  
+            std::cout << "host grejen " << playerId << std::endl;
+        });
+
+    svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {
+        std::string playerId = req.get_header_value("Cookie");
+        if (activeLobbies.find(req.body) != activeLobbies.end())
+        {
+            res.set_content("Accepted", "text/plain");
+            
+           std::string lobbyId = req.body;
+           playerToLobby[playerId] = req.body;
+           activeLobbies[req.body].AddConnectedPlayer(playerId);
+        }
+        else
+        {
+            res.set_content("nej", "text/plain");
+        }
+        
+        std::cout << "join grejen " <<playerId  << std::endl;
+        });
 
     svr.Get("/hi", [](const httplib::Request& req, Response& res) {
         std::cout << "hej " << std::endl;
@@ -43,5 +104,40 @@ void DraftServer::Start()
 
 void DraftServer::LoadAvailableCards()
 {
-    std::
+    std::filesystem::path imagesPath = std::filesystem::path("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteServer\\CardImages");
+
+    for (auto const& card : std::filesystem::directory_iterator{imagesPath})
+    {
+        availableCards.push_back(card.path().filename().string());
+
+        std::cout << card.path().filename().string();
+    }
+}
+
+
+
+std::string DraftServer::HostLobby(std::string playerId)
+{   
+
+
+     
+    activeLobbies[std::to_string(lobbyId)] = Lobby(std::vector<std::string>{playerId}, 3, 3);
+    playerToLobby[playerId] =  std::to_string(lobbyId);
+    lobbyId += 1;
+    std::string stringToReturn = std::to_string(lobbyId -1);
+    return stringToReturn;
+}
+
+void DraftServer::HostLobbyRequest(const httplib::Request& req, httplib::Response& res)
+{
+
+    std::string playerId = req.get_header_value("Cookie");
+
+    if (playerToLobby.find(playerId) != playerToLobby.end())
+    {
+
+        res.set_content(HostLobby(playerId), "text/plain");
+    }
+
+    std::cout << "host grejen " << playerId << std::endl;
 }

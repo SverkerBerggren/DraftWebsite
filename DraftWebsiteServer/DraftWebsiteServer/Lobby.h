@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <map>
-
+#include <mutex>
 class Lobby
 {
 
@@ -13,36 +13,37 @@ private:
 
 	std::vector<std::string> connectedPlayers;
 
-	std::map<std::string, std::vector<Card>> packsInRotation;
+	std::map<std::string, std::vector<std::string>> packsInRotation;
 
 	std::unordered_map<std::string, bool> playerHavePicked;
 
-	std::unordered_map<std::string, std::vector<Card>> pickedCards;
+	std::unordered_map<std::string, std::vector<std::string>> pickedCards;
 
-	int cardsPerPack;
-	int amountOfPacks; 
+	int cardsPerPack = 0;
+	int amountOfPacks = 0; 
 
-	void InitializeLobby(const std::vector <std::string> &playersInLobby );
-	
-	
+	std::mutex lobbyMutex;
+		
 public: 
 
-
-
+	Lobby() = default;
 
 	void PickCard(const std::string &playerId, int index);
 
-	std::string GetDraftableCards(const std::string &playerId);
+	void StartLobby();
 
 	void StartNewRotation(bool allPlayersHavePicked);
 
-	
+	void AddConnectedPlayer(const std::string &playerId);
 
-	Lobby(const std::vector<std::string> &connectedPlayers ,int cardsPerPack, int amountOfPacks)
+	std::string GetDraftableCardsPlayer(const std::string &playerId);
+
+	Lobby( std::vector<std::string> connectedPlayers ,int cardsPerPack, int amountOfPacks)
 	{
 		this->connectedPlayers = connectedPlayers;
 		this->cardsPerPack = cardsPerPack;
 		this->amountOfPacks = amountOfPacks;
-		InitializeLobby(connectedPlayers);
+
+		
 	}
 };
