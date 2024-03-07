@@ -11,6 +11,8 @@ private:
 
     int lobbyId = 0;
     int playerCookieId = 0;
+
+    std::mutex serverMutex = std::mutex();
     
 public: 
     httplib::Server svr;

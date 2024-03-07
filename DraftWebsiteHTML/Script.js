@@ -20,9 +20,6 @@ let inputCardsPerPack = document.getElementById("InputFieldCardPerPack");
 let inputAmountOfPacks = document.getElementById("InputFieldAmountOfPack");
 let inputAmountOfPlayers = document.getElementById("InputFieldAmountOfPlayers");
 
-const availableCards = []; 
-
-const draftedCards = [];
 
 TestaFunktioner();
 
@@ -31,18 +28,14 @@ HideHighlightCard();
 joinButton.onclick = JoinLobby;
 
 
-const simulatedPacks = [];
 const DATA_INDEX = "data-index";
 
-let amountOfPacks = 3;
-let amountOfPlayers = 5;
-let cardsPerPack = 10;  
 
 const controller = new AbortController();
 const { signal } = controller;
 
 
-let packsDrafted = 0; 
+const draftedCards = [];
 
 
 //AddAvailableCards();
@@ -71,6 +64,8 @@ async function TestGetMethod()
     console.log(response2.text());
 
 }
+
+
 async function HostLobby()
 {
     response = await fetch("http://localhost:1234/HostLobby",{
@@ -119,7 +114,7 @@ function StartDraft()
 
 async function ShowDraftableCardsServer()
 {
-    response = await fetch("http://localhost:1234/AvailableCards",{
+    await fetch("http://localhost:1234/AvailableCards",{
     method: "Get"
     }).then((response) => response.text()).then((text) => {
         console.log(text);
@@ -133,91 +128,6 @@ async function ShowDraftableCardsServer()
       });
   
     
-
-}
-
-function StartInitialization()
-{   
-
-
-
-    for(i = 0; i < amountOfPlayers; i++)
-    {
-        simulatedPacks.push(CreatePack());
-    }
-
-    //console.log(simulatedPacks);
-}
-
-function GetRandomInt(max )
-{
-    return Math.floor(Math.random() * max);
-}
-
-
-function CreatePack()
-{   
-
-
-    const cardPack = [];
-    for(z = 0; z < cardsPerPack; z++)
-    {   
-        let index = GetRandomInt(availableCards.length);
-        cardPack.push(availableCards[index]);
-    }
-
-    
-    
-
-    return cardPack ;
-}
-
-function OpenNewPack()
-{
-
-    simulatedPacks.length = 0;
-
-
-    for(i = 0; i < amountOfPlayers; i++)
-    {
-        simulatedPacks.push(CreatePack());
-    }
-
-
-}
-
-
-
-function RotatePacks()
-{
-    
-    let packToPlace;
-
-    for(i = 0; i< simulatedPacks.length; i++)
-    {
-
-        if(i == 0)
-        {
-            packToPlace = simulatedPacks[1];
-            simulatedPacks[1] = simulatedPacks[0];
-            continue;
-        } 
-        if(i == simulatedPacks.length -1)
-        {
-            simulatedPacks[0] = packToPlace;
-            continue;
-        }
-        let packReplaced = simulatedPacks[i];
-
-        simulatedPacks[i] = packToPlace;
-        
-        packToPlace = packReplaced;
-        
-
-
-
-    }
-
 
 }
 
@@ -236,48 +146,9 @@ function download(filename, text) {
     document.body.removeChild(element);
   }
 
-function RemoveCardFromPacks(index)
-{   
-
-    simulatedPacks[0].splice(index,1);
-    
-
-    
-    for(i = 1; i < simulatedPacks.length; i++)
-    {   
-        console.log(simulatedPacks[0]);
-
-        simulatedPacks[i].splice(GetRandomInt(simulatedPacks[i].length),1);
-    }
-
-    if(simulatedPacks[0].length == 0)
-    {   
-        packsDrafted +=1;
-        if(packsDrafted < amountOfPacks)
-        {
-
-            OpenNewPack();
-        }else
-        {
-            FinishDraftAndShowCards();     
-        }
-    }
-}
 
 
-function ShowPack(packToShow)
-{   
-    if(packToShow.length == 0)
-    {
-        return;
-    }
 
-    for(i = 0; i < packToShow.length; i++)
-    {
-        CreateDraftableCard(packToShow[i],i);
-    }
-
-}
 
 function RemoveDraftableCards()
 {
@@ -287,12 +158,13 @@ function RemoveDraftableCards()
 }
 
 
-function AddAvailableCards()
+async function PickCardServer(cardIndex)
 {
-    availableCards.push("Ash.webp");
-    availableCards.push("InstantFusion.png");
+    response = fetch("PickCard",{
+        method: "Post",
+        body: cardIndex
+    });
 }
-
 
 
 
@@ -319,18 +191,9 @@ function CreateDraftableCard(cardName, index)
 
         RemoveDraftableCards();
 
-        RemoveCardFromPacks(index);
+        PickCardServer(index);
 
-        RotatePacks();
-
-   
-
-        if(simulatedPacks[0].length != 0)
-        {
-
-            ShowPack(simulatedPacks[0]);    
-        }
-
+        
     //    console.log(simulatedPacks[0].length);
 
         

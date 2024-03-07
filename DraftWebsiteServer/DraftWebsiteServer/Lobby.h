@@ -13,7 +13,7 @@ private:
 
 	std::vector<std::string> connectedPlayers;
 
-	std::map<std::string, std::vector<std::string>> packsInRotation;
+	std::map<std::string, std::vector<std::string>> playerPacks;
 
 	std::unordered_map<std::string, bool> playerHavePicked;
 
@@ -22,25 +22,30 @@ private:
 	int cardsPerPack = 0;
 	int amountOfPacks = 0; 
 
-	std::mutex lobbyMutex;
+	std::unique_ptr<std::mutex> lobbyMutex = std::make_unique<std::mutex>();
 		
+	std::vector<std::string> shuffledCardList;
+
 public: 
 
 	Lobby() = default;
 
+
 	void PickCard(const std::string &playerId, int index);
 
-	void StartLobby();
+	void CreatePacks();
 
-	void StartNewRotation(bool allPlayersHavePicked);
+	void StartLobby(const  std::vector<std::string> &availableCards);
+
+	void RotatePacks(bool allPlayersHavePicked);
 
 	void AddConnectedPlayer(const std::string &playerId);
 
 	std::string GetDraftableCardsPlayer(const std::string &playerId);
 
-	Lobby( std::vector<std::string> connectedPlayers ,int cardsPerPack, int amountOfPacks)
+	Lobby( std::string firstPlayer ,int cardsPerPack, int amountOfPacks)
 	{
-		this->connectedPlayers = connectedPlayers;
+		connectedPlayers.push_back(firstPlayer);
 		this->cardsPerPack = cardsPerPack;
 		this->amountOfPacks = amountOfPacks;
 

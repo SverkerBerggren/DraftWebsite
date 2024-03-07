@@ -29,12 +29,14 @@ void DraftServer::Start()
 
         std::string playerId = req.get_header_value("Cookie");
 
-        if (playerToLobby.find(playerId) != playerToLobby.end())
         {
-            res.set_content(activeLobbies[playerToLobby[playerId]].GetDraftableCardsPlayer(playerId),"text/plain");
+            std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
+            if (playerToLobby.find(playerId) != playerToLobby.end())
+            {
+                res.set_content(activeLobbies[playerToLobby[playerId]].GetDraftableCardsPlayer(playerId), "text/plain");
+            }
         }
-        //std::ifstream ifStream = std::ifstream("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML\\placeholder.html");
-   //     res.set_content(stringToReturn, "text/plain")
+
 
         });
     svr.Get("/AvailableCards", [&](const httplib::Request& req, Response& res) {
@@ -93,6 +95,26 @@ void DraftServer::Start()
         std::cout << "join grejen " <<playerId  << std::endl;
         });
 
+    svr.Post("/PickCard", [&](const httplib::Request& req, Response& res) {
+        std::string playerId = req.get_header_value("Cookie");
+        int index = -1;
+        try
+        {
+            index = std::stoi(req.body);
+        }
+        catch(std::exception e){
+            std::cout << e.what();
+        }
+
+        if (index != -1)
+        {
+            activeLobbies[playerToLobby[playerId]].PickCard(playerId, index);
+        }
+
+
+        std::cout << "pick grejen " << playerId << std::endl;
+        });
+
     svr.Get("/hi", [](const httplib::Request& req, Response& res) {
         std::cout << "hej " << std::endl;
         res.status = StatusCode::Accepted_202;
@@ -121,7 +143,7 @@ std::string DraftServer::HostLobby(std::string playerId)
 
 
      
-    activeLobbies[std::to_string(lobbyId)] = Lobby(std::vector<std::string>{playerId}, 3, 3);
+    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId, 3, 3);
     playerToLobby[playerId] =  std::to_string(lobbyId);
     lobbyId += 1;
     std::string stringToReturn = std::to_string(lobbyId -1);
