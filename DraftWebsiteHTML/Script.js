@@ -8,6 +8,7 @@ let cardHighlight = document.getElementById("HighLightCard");
 
 let downloadButton = document.getElementById("Downloadbutton");
 
+let hostButton = document.getElementById("HostButton");
 let startButton = document.getElementById("StartButton");
 
 let startForm = document.getElementById("StartForm");
@@ -35,16 +36,18 @@ const controller = new AbortController();
 const { signal } = controller;
 
 
-const draftedCards = [];
+// const draftedCards = [];
 
-
+let continueUpdate = true;
 //AddAvailableCards();
 
-startButton.onclick = StartDraft;
+let currentDraftableCards = [];
+hostButton.onclick = HostLobby;
+
 
 //ShowPack(simulatedPacks[0]);
 
-HostLobby();
+//HostLobby();
 
 TestGetMethod();
 
@@ -68,12 +71,72 @@ async function TestGetMethod()
 
 async function HostLobby()
 {
+
+    startForm.remove();
     response = await fetch("http://localhost:1234/HostLobby",{
         method: "Post"
     }).then((response) => response.text()).then((text) =>{
         console.log(text);
     });
+    
+    //UpdateLoop();
+}
 
+async function UpdateLoop()
+{
+    while(continueUpdate)
+    {
+        response = await fetch("http://localhost:1234/Update",{
+            method: "Get",
+            signal: AbortSignal.timeout(15000)
+            }).then((response) => response.text()).then((text) => {
+                
+                message = text.split(":");
+                if(message[0] == "DraftableCards")
+                {   
+                    message.shift();
+
+                    console.log(message);
+                    console.log(currentDraftableCards);
+                    console.log(arraysEqual(message,currentDraftableCards));
+                    if((!arraysEqual(message,currentDraftableCards)) || currentDraftableCards.length == 0)
+                    {
+                        DraftableCardsFromServer(message);
+                    }
+                    currentDraftableCards = message;
+                }
+                if(message[0] == "DraftFinished")
+                {
+                    FinishDraftAndShowCards();
+                    continueUpdate = false;
+                }
+                console.log(text);
+              });
+
+        await sleep(3000);
+    }
+}
+
+//snodd kod
+function arraysEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length !== b.length) return false;
+  
+    // If you don't care about the order of the elements inside
+    // the array, you should sort both arrays here.
+    // Please note that calling sort on an array will modify that array.
+    // you might want to clone your array first.
+  
+    for (var i = 0; i < a.length; ++i) {
+      if (a[i] !== b[i]) return false;
+    }   
+    return true;
+
+}
+//snodd kod
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 async function JoinLobby()
 {
@@ -92,6 +155,16 @@ async function JoinLobby()
 }
 
 
+function DraftableCardsFromServer( textArray)
+{
+    for(i = 0; i < textArray.length;i++)
+    {
+        CreateDraftableCard(textArray[i],i);
+    }
+}
+
+
+
 function StartDraft()
 {
 
@@ -104,7 +177,7 @@ function StartDraft()
     startForm.remove();
 
   //  ShowDraftableCards();
-  ShowDraftableCardsServer();
+  // ShowDraftableCardsServer();
    // StartInitialization();
 
    // ShowPack(simulatedPacks[0]);
@@ -156,14 +229,21 @@ function RemoveDraftableCards()
         draftableCardSection.removeChild(draftableCardSection.lastChild);
       }
 }
-
+function RemoveDraftedCards()
+{
+    while (draftedCardsSection.firstChild) {
+        draftedCardsSection.removeChild(draftedCardsSection.lastChild);
+      }
+}
 
 async function PickCardServer(cardIndex)
 {
-    response = fetch("PickCard",{
+    response = await fetch("PickCard",{
         method: "Post",
         body: cardIndex
     });
+    UpdateDraftedCards();
+
 }
 
 
@@ -185,14 +265,14 @@ function CreateDraftableCard(cardName, index)
 
     card.addEventListener("click", ()=>{
 
-
         
         AddCardToDraftPile(cardName);
-
+        
         RemoveDraftableCards();
-
+        HideHighlightCard();
+        
         PickCardServer(index);
-
+        
         
     //    console.log(simulatedPacks[0].length);
 
@@ -232,10 +312,12 @@ function HideHighlightCard()
 function AddCardToDraftPile(cardName)
 {   
 
-    event.srcElement.remove();
+   // event.srcElement.remove();
 
+    //draftedCards = UpdateDraftedCards();
 
     HideHighlightCard();
+
 
     let cardImage = document.createElement("img")
 
@@ -251,13 +333,39 @@ function AddCardToDraftPile(cardName)
         HideHighlightCard(); 
      });
 
-    draftedCards.push(cardName);
+    //draftedCards.push(cardName);
 }
 
-function FinishDraftAndShowCards()
+async function UpdateDraftedCards()
+{
+    response = await fetch("http://localhost:1234/PickedCards",{
+            method: "Get"
+            }).then((response) => response.text()).then((text) => {
+
+                RemoveDraftedCards();
+                message = text.split(":");
+                for(i = 0; i < message.length; i++)
+                {
+                    AddCardToDraftPile(message[i]);
+                }
+
+            });
+}
+
+async function FinishDraftAndShowCards()
 {   
 
     let cardsDrafted = "";
+    let draftedCards;
+    response = await fetch("http://localhost:1234/PickedCards",{
+            method: "Get"
+            }).then((response) => response.text()).then((text) => {
+
+                draftedCards = text.split(":");
+
+
+            });
+
     for(i = 0; i < draftedCards.length; i++)
     {    
 

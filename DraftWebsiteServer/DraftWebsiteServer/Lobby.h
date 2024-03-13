@@ -26,6 +26,14 @@ private:
 		
 	std::vector<std::string> shuffledCardList;
 
+	int packsCreated = 0; 
+
+	bool draftFinished = false;
+
+	std::string host; 
+
+	bool lobbyStarted = false;
+
 public: 
 
 	Lobby() = default;
@@ -41,11 +49,19 @@ public:
 
 	void AddConnectedPlayer(const std::string &playerId);
 
-	std::string GetDraftableCardsPlayer(const std::string &playerId);
+	bool HasLobbyStarted();
 
-	Lobby( std::string firstPlayer ,int cardsPerPack, int amountOfPacks)
+	std::string GetDraftableCardsPlayer(const std::string& playerId);
+	std::string GetPickedCardsPlayer(const std::string &playerId);
+
+	std::string GetHost();
+
+	bool IsDraftFinished();
+
+	Lobby(const std::string &firstPlayer ,int cardsPerPack, int amountOfPacks)
 	{
 		connectedPlayers.push_back(firstPlayer);
+		host = firstPlayer;
 		this->cardsPerPack = cardsPerPack;
 		this->amountOfPacks = amountOfPacks;
 
