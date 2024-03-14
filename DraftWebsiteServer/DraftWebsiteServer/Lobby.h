@@ -51,9 +51,9 @@ public:
 
 	bool HasLobbyStarted();
 
-	const std::string& GetDraftableCardsPlayer(const std::string& playerId);
-	const std::string& GetPickedCardsPlayer(const std::string& playerId);
-	const std::string& GetConnectedPlayers();
+	std::string GetDraftableCardsPlayer(const std::string& playerId);
+	std::string GetPickedCardsPlayer(const std::string& playerId);
+	std::string GetConnectedPlayers();
 
 	const std::string& GetHost();
 

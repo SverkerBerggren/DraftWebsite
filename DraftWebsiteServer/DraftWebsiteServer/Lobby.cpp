@@ -90,7 +90,7 @@ void Lobby::AddConnectedPlayer(const std::string &playerId)
 	}
 }
 
-const std::string& Lobby::GetDraftableCardsPlayer(const std::string& playerId)
+std::string Lobby::GetDraftableCardsPlayer(const std::string& playerId)
 {	
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	std::string stringToReturn = "";
@@ -109,7 +109,7 @@ const std::string& Lobby::GetDraftableCardsPlayer(const std::string& playerId)
 
 
 
-const std::string& Lobby::GetPickedCardsPlayer(const std::string& playerId)
+std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	std::string stringToReturn = "";
@@ -166,7 +166,7 @@ const std::string& Lobby::GetHost()
 	return host;
 }
 
-const std::string& Lobby::GetConnectedPlayers()
+std::string Lobby::GetConnectedPlayers()
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	std::string stringToReturn = "";

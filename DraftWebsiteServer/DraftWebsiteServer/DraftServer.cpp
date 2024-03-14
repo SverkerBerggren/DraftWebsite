@@ -3,7 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <condition_variable>
-
+#include "json.hpp"
 using namespace httplib;
 void DraftServer::Start()
 {
@@ -105,7 +105,7 @@ void DraftServer::Start()
             if (playerToLobby.find(playerId) == playerToLobby.end())
             {
   
-                res.set_content(HostLobby(playerId), "text/plain");
+                res.set_content( "hostat lobby id" + HostLobby(playerId), "text/plain");
 
             }
             else
@@ -241,7 +241,7 @@ std::string DraftServer::HostLobby(std::string playerId)
 
      
     activeLobbies[std::to_string(lobbyId)] = Lobby(playerId, 3, 3);
-    activeLobbies[std::to_string(lobbyId)].StartLobby(availableCards);
+   // activeLobbies[std::to_string(lobbyId)].StartLobby(availableCards);
     playerToLobby[playerId] =  std::to_string(lobbyId);
     lobbyId += 1;
     std::string stringToReturn = std::to_string(lobbyId -1);

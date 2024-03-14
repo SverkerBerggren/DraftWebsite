@@ -65,9 +65,10 @@ async function HostLobby()
         method: "Post"
     }).then((response) => response.text()).then((text) =>{
         hostedLobbyId = text;
+        console.log(text);
     });
 
-    //UpdateLoop();
+    UpdateLoop();
 }
 
 async function JoinLobby()
