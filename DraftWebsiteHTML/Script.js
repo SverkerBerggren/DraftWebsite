@@ -21,13 +21,15 @@ let inputCardsPerPack = document.getElementById("InputFieldCardPerPack");
 let inputAmountOfPacks = document.getElementById("InputFieldAmountOfPack");
 let inputAmountOfPlayers = document.getElementById("InputFieldAmountOfPlayers");
 
-
-TestaFunktioner();
+let playersJoinedArea = document.getElementById("PlayersJoined");
 
 HideHighlightCard();
 
 joinButton.onclick = JoinLobby;
 
+let joinedLobbyId ="";
+
+let hostedLobbyId = "";
 
 const DATA_INDEX = "data-index";
 
@@ -39,6 +41,7 @@ const { signal } = controller;
 // const draftedCards = [];
 
 let continueUpdate = true;
+let continuePlayerUpdate = true;
 //AddAvailableCards();
 
 let currentDraftableCards = [];
@@ -49,33 +52,46 @@ hostButton.onclick = HostLobby;
 
 //HostLobby();
 
-TestGetMethod();
 
 downloadButton.hidden = true;
 
-async function TestGetMethod()
-{   
-
-    response2  = await fetch("http://localhost:1234/hi", {
-        method: "GET", // *GET, POST, PUT, DELETE, etc.
-        headers: {
-          "Content-Type": "text/plain",
-          // 'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-    
-    console.log(response2.text());
-
-}
 
 
 async function HostLobby()
 {
 
     startForm.remove();
-    response = await fetch("http://localhost:1234/HostLobby",{
+    response = await fetch("/HostLobby",{
         method: "Post"
     }).then((response) => response.text()).then((text) =>{
+        hostedLobbyId = text;
+    });
+
+    //UpdateLoop();
+}
+
+async function JoinLobby()
+{
+    response = await fetch("/JoinLobby",{
+        method: "Post",
+        body: joinInput.value
+        }).then((response) => response.text()).then((text) => {
+            if(text == "Accepted")
+            {
+                startForm.remove();
+            }
+
+            console.log(text);
+          });
+}
+
+async function StartLobby()
+{
+
+    response = await fetch("/StartLobby",{
+        method: "Post"
+    }).then((response) => response.text()).then((text) =>{
+        
         console.log(text);
     });
     
@@ -86,7 +102,7 @@ async function UpdateLoop()
 {
     while(continueUpdate)
     {
-        response = await fetch("http://localhost:1234/Update",{
+        response = await fetch("/Update",{
             method: "Get",
             signal: AbortSignal.timeout(15000)
             }).then((response) => response.text()).then((text) => {
@@ -116,6 +132,34 @@ async function UpdateLoop()
         await sleep(3000);
     }
 }
+async function UpdateJoinedPlayers()
+{
+    while(continuePlayerUpdate)
+    {
+        response = await fetch("/UpdatePlayers",{
+            method: "Get",
+            signal: AbortSignal.timeout(15000),
+            body: joinedLobbyId
+            }).then((response) => response.text()).then((text) => {
+                
+                message = text.split(":");
+
+                RemoveChildren(playersJoinedArea);
+
+                for(i = 0; i < message.length; i++)
+                {
+                    let paragraph = document.createElement("p");
+                    paragraph.textContent = message[i];
+                    playersJoinedArea.append(paragraph);
+                }
+
+                console.log(text);
+              });
+
+        await sleep(3000);
+    }
+}
+
 
 //snodd kod
 function arraysEqual(a, b) {
@@ -137,21 +181,6 @@ function arraysEqual(a, b) {
 //snodd kod
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-}
-async function JoinLobby()
-{
-    response = await fetch("http://localhost:1234/JoinLobby",{
-        method: "Post",
-        body: joinInput.value
-        }).then((response) => response.text()).then((text) => {
-            if(text == "Accepted")
-            {
-                startForm.remove();
-            }
-
-            console.log(text);
-          });
-      
 }
 
 
@@ -187,7 +216,7 @@ function StartDraft()
 
 async function ShowDraftableCardsServer()
 {
-    await fetch("http://localhost:1234/AvailableCards",{
+    await fetch("/AvailableCards",{
     method: "Get"
     }).then((response) => response.text()).then((text) => {
         console.log(text);
@@ -233,6 +262,13 @@ function RemoveDraftedCards()
 {
     while (draftedCardsSection.firstChild) {
         draftedCardsSection.removeChild(draftedCardsSection.lastChild);
+      }
+}
+
+function RemoveChildren(htmlElement)
+{
+    while (htmlElement.firstChild) {
+        htmlElement.removeChild(htmlElement.lastChild);
       }
 }
 
@@ -338,7 +374,7 @@ function AddCardToDraftPile(cardName)
 
 async function UpdateDraftedCards()
 {
-    response = await fetch("http://localhost:1234/PickedCards",{
+    response = await fetch("/PickedCards",{
             method: "Get"
             }).then((response) => response.text()).then((text) => {
 
@@ -357,7 +393,7 @@ async function FinishDraftAndShowCards()
 
     let cardsDrafted = "";
     let draftedCards;
-    response = await fetch("http://localhost:1234/PickedCards",{
+    response = await fetch("/PickedCards",{
             method: "Get"
             }).then((response) => response.text()).then((text) => {
 
@@ -386,15 +422,4 @@ async function FinishDraftAndShowCards()
     })
 
     controller.abort();
-}
-
-function TestaFunktioner()
-{   
-
-    $(document).on("keypress", function (e) {
-        // use e.which
-        
-      //  CreateDraftableCard("Ash.webp");
-      
-    });
 }

@@ -124,20 +124,21 @@ void DraftServer::Start()
         auto iterator = activeLobbies.find(playerToLobby[playerId]);
         if (iterator != activeLobbies.end())
         {
-            if(playerId.)
-            res.set_content("lobby started", "text/plain");
-
+            if (playerId._Equal(iterator->second.GetHost()))
+            {
+                iterator->second.StartLobby(availableCards);
+                res.set_content("lobby started", "text/plain");
+            }
+            res.set_content("du ar inte host", "text/plain");
         }
         else
         {
-            res.set_content("redan i lobby", "text/plain");
-
+            res.set_content("lobby finns inte", "text/plain");
         }
-
         std::cout << "start grejen " << playerId << std::endl;
         });
 
-    svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {
+    svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {    
         std::string playerId = req.get_header_value("Cookie");
         std::string lobbyId = req.body;
         std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
@@ -162,6 +163,29 @@ void DraftServer::Start()
             }
         }
         std::cout << "join grejen " <<playerId  << std::endl;
+        });
+
+
+    svr.Post("/UpdatePlayers", [&](const httplib::Request& req, Response& res) {
+        std::string playerId = req.get_header_value("Cookie");
+        std::string lobbyId = req.body;
+        {
+            std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
+            auto iterator = activeLobbies.find(playerToLobby[playerId]);
+            if (iterator != activeLobbies.end())
+            {
+
+                playerToLobby[playerId] = req.body;
+                iterator->second.AddConnectedPlayer(playerId);
+                res.set_content("Accepted", "text/plain");
+                res.body = iterator->second.GetConnectedPlayers();
+            }
+            else
+            {
+                res.set_content("nej", "text/plain");
+            }
+        }
+        std::cout << "join grejen " << playerId << std::endl;
         });
 
     svr.Post("/PickCard", [&](const httplib::Request& req, Response& res) {
@@ -193,7 +217,8 @@ void DraftServer::Start()
         res.set_content("har var det data", "text/plain");
         });
 
-    svr.listen("localhost", 1234);
+    svr.listen("0.0.0.0", 1234);
+    
 }
 
 void DraftServer::LoadAvailableCards()
