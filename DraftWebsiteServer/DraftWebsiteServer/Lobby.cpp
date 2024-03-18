@@ -90,18 +90,14 @@ void Lobby::AddConnectedPlayer(const std::string &playerId)
 	}
 }
 
-std::string Lobby::GetDraftableCardsPlayer(const std::string& playerId)
+std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playerId)
 {	
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
-	std::string stringToReturn = "";
+	std::vector<std::string> stringToReturn;
 
 	for (int i = 0; i < playerPacks[playerId].size(); i++)
 	{
-		stringToReturn += playerPacks[playerId][i];
-		if (i != playerPacks[playerId].size() - 1)
-		{
-			stringToReturn += ":";
-		}
+		stringToReturn.push_back(playerPacks[playerId][i]);
 	}
 
 	return stringToReturn;

@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <map>
 #include <mutex>
+
 class Lobby
 {
 
@@ -51,7 +52,7 @@ public:
 
 	bool HasLobbyStarted();
 
-	std::string GetDraftableCardsPlayer(const std::string& playerId);
+	std::vector<std::string> GetDraftableCardsPlayer(const std::string& playerId);
 	std::string GetPickedCardsPlayer(const std::string& playerId);
 	std::string GetConnectedPlayers();
 

@@ -4,7 +4,10 @@
 #include <chrono>
 #include <condition_variable>
 #include "json.hpp"
+
 using namespace httplib;
+using json = nlohmann::json;
+
 void DraftServer::Start()
 {
     svr.set_mount_point("/", "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML");
@@ -48,29 +51,31 @@ void DraftServer::Start()
         res.set_content(stringToReturn, "text/plain");
         });
 
-    svr.Get("/Update", [&](const httplib::Request& req, Response& res) {
+    svr.Post("/Update", [&](const httplib::Request& req, Response& res) {
 
-        std::string stringToReturn = "DraftableCards:";
+        //std::string stringToReturn = "";
         std::string playerId = req.get_header_value("Cookie");
+        json message;
 
+        std::string updateType = req.body;
         {
             std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
             auto iterator = playerToLobby.find(playerId);
+
             if (iterator != playerToLobby.end())
-            {
-                if (activeLobbies[iterator->second].IsDraftFinished())
+            {   
+                if (updateType._Equal("UpdateDraftableCards"))
                 {
-                    stringToReturn = "DraftFinished";
-                }
-                else
-                {
-                    stringToReturn += activeLobbies[iterator->second].GetDraftableCardsPlayer(playerId);
-                }
+                    message["DraftableCards"] = activeLobbies[iterator->second].GetDraftableCardsPlayer(playerId);
+                    message["DraftFinished"] = activeLobbies[iterator->second].IsDraftFinished();
+                }   
+
             }
         }
         
-        std::cout << "update grejen " << stringToReturn << std::endl;
-        res.set_content(stringToReturn, "text/plain");
+        std::cout << "update grejen " << std::endl;
+        std::string debugString = message.dump();
+        res.set_content(message.dump(), "text/plain");
 
         });
 
@@ -241,7 +246,7 @@ std::string DraftServer::HostLobby(std::string playerId)
 
      
     activeLobbies[std::to_string(lobbyId)] = Lobby(playerId, 3, 3);
-   // activeLobbies[std::to_string(lobbyId)].StartLobby(availableCards);
+    activeLobbies[std::to_string(lobbyId)].StartLobby(availableCards);
     playerToLobby[playerId] =  std::to_string(lobbyId);
     lobbyId += 1;
     std::string stringToReturn = std::to_string(lobbyId -1);

@@ -40,7 +40,7 @@ const { signal } = controller;
 
 // const draftedCards = [];
 
-let continueUpdate = true;
+let continueDraftableCardsLoop = true;
 let continuePlayerUpdate = true;
 //AddAvailableCards();
 
@@ -68,7 +68,7 @@ async function HostLobby()
         console.log(text);
     });
 
-    UpdateLoop();
+    UpdateDraftableCardsLoop();
 }
 
 async function JoinLobby()
@@ -99,38 +99,36 @@ async function StartLobby()
     //UpdateLoop();
 }
 
-async function UpdateLoop()
+async function UpdateDraftableCardsLoop()
 {
-    while(continueUpdate)
+    while(continueDraftableCardsLoop)
     {
         response = await fetch("/Update",{
-            method: "Get",
-            signal: AbortSignal.timeout(15000)
-            }).then((response) => response.text()).then((text) => {
+            method: "Post",
+            signal: AbortSignal.timeout(15000),
+            body : "UpdateDraftableCards"
+            }).then((response) => response.json()   ).then((json) => {
                 
-                message = text.split(":");
-                if(message[0] == "DraftableCards")
-                {   
-                    message.shift();
 
-                    console.log(message);
-                    console.log(currentDraftableCards);
-                    console.log(arraysEqual(message,currentDraftableCards));
-                    if((!arraysEqual(message,currentDraftableCards)) || currentDraftableCards.length == 0)
-                    {
-                        DraftableCardsFromServer(message);
-                    }
-                    currentDraftableCards = message;
-                }
-                if(message[0] == "DraftFinished")
+                console.log(json);
+                console.log(currentDraftableCards);
+                if(json["DraftFinished"] == true)
                 {
                     FinishDraftAndShowCards();
-                    continueUpdate = false;
+                    continueDraftableCardsLoop = false;
                 }
-                console.log(text);
+                else
+                {
+                    if( (!arraysEqual(json["DraftableCards"], currentDraftableCards)) || currentDraftableCards.length == 0)
+                    {
+                        DraftableCardsFromServer(json["DraftableCards"]);
+                    }
+                    currentDraftableCards = json["DraftableCards"];
+                }
+
               });
 
-        await sleep(3000);
+        await sleep(1000);
     }
 }
 async function UpdateJoinedPlayers()
