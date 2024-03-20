@@ -2,7 +2,7 @@
 #include "DraftWebsiteServer.h"
 #include "httplib.h"
 #include "Lobby.h"
-
+// dessa beskrivs i cpp filen
 class DraftServer
 {
 private: 
@@ -21,6 +21,7 @@ private:
 
     std::vector<std::string> availableCards;
 
+    std::string pointOfEntry;
 
     void RemoveLobby(const std::string& lobbyId);
 
@@ -29,5 +30,5 @@ private:
 public: 
 
 
-    void Start();
+    void Start(const std::string& entryPoint);
 };

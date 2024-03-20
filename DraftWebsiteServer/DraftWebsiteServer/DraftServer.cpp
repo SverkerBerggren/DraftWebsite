@@ -7,18 +7,25 @@
 
 using namespace httplib;
 using json = nlohmann::json;
-
-void DraftServer::Start()
+/// <summary>
+/// servern som startas från main loopen 
+/// </summary>
+/// <param name="entryPoint"></param>
+void DraftServer::Start(const std::string& entryPoint)
 {
-    svr.set_mount_point("/", "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML");
+
+    pointOfEntry = entryPoint;
+    svr.set_mount_point("/", pointOfEntry);
 
     LoadAvailableCards();
+    //Sätter alla http requests 
 
+    //REquesten för att få alla resurser som css och bilder och dylikt
     svr.Get("/", [&](const httplib::Request& req, Response& res) {
         std::cout << "hej getta html" << std::endl;
         std::cout << " Cookie " << req.get_header_value("Cookie") << std::endl;
-
-        std::ifstream ifStream = std::ifstream("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML\\placeholder.html");
+        std::string tempString = pointOfEntry;
+        std::ifstream ifStream = std::ifstream(tempString.append("\\placeholder.html"));
 
         ifStream.seekg(0, ifStream.end);
         std::string html = std::string(ifStream.tellg(), 0);
@@ -33,24 +40,8 @@ void DraftServer::Start()
         std::cout << html.size() << std::endl;
         });
 
-    //ska tas bort
-    svr.Get("/AvailableCards", [&](const httplib::Request& req, Response& res) {
 
-        std::string stringToReturn = "";
-
-        for (int i = 0; i < availableCards.size(); i++)
-        {
-            stringToReturn += availableCards[i];
-            if (i != availableCards.size() - 1)
-            {
-                stringToReturn += ":";
-            }
-        }
-        res.status = StatusCode::OK_200;
-        std::cout << "put grejen " << stringToReturn << std::endl;
-        res.set_content(stringToReturn, "text/plain");
-        });
-
+    //requesten som behandlar alla pollande uppdateringar från klienten. Avgör requesten utifrån bodyn och returnar utefter det korrosponerande json fil
     svr.Post("/Update", [&](const httplib::Request& req, Response& res) {
 
         //std::string stringToReturn = "";
@@ -87,6 +78,7 @@ void DraftServer::Start()
 
         });
 
+    //Requesten som behandlar när en spelare vill se kortet de har tagit digiare
     svr.Get("/PickedCards", [&](const httplib::Request& req, Response& res) {
 
         std::string stringToReturn = "";
@@ -106,11 +98,11 @@ void DraftServer::Start()
 
         });
 
-  //  svr.Post("/HostLobby", hostLobbyFunction);
-
+    //Requesten som behandlar när en spelare vill hosta en lobby
     svr.Post("/HostLobby", [&](const httplib::Request& req, Response& res) {
   
             std::string playerId = req.get_header_value("Cookie");
+            json message;
             bool shouldHostLobby = false;
             {
                 std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
@@ -122,17 +114,21 @@ void DraftServer::Start()
 
             }
             if (shouldHostLobby)
-            {
-                res.set_content("hostat lobby id " + HostLobby(playerId), "text/plain");
+            {   
+                message["Accepted"] = true; 
+                message["LobbyId"] = HostLobby(playerId);
+                res.set_content(message.dump(), "text/plain");
             }
             else
             {
-                res.set_content("redan i lobby", "text/plain");
+                message["Accepted"] = false;
+
+                res.set_content(message.dump(), "text/plain");
             }
             
             std::cout << "host grejen " << playerId << std::endl;
         });
-
+    //Requesten som behandlar när en spelare vill starta lobbyn. Går bara om man är spelaren som hostade lobbyn
     svr.Post("/StartLobby", [&](const httplib::Request& req, Response& res) {
 
         std::string playerId = req.get_header_value("Cookie");
@@ -153,6 +149,7 @@ void DraftServer::Start()
         }
         std::cout << "start grejen " << playerId << std::endl;
         });
+    //Requesten som behandlar när en spelare vill gå med en lobby. Man kan bara vara med i en lobby samtidigt
 
     svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {    
         std::string playerId = req.get_header_value("Cookie");
@@ -193,7 +190,7 @@ void DraftServer::Start()
         std::cout << "join grejen " <<playerId  << std::endl;
         });
 
-
+    //metoden när en spelare vill ta ett kort som är tillgängligt till dom 
     svr.Post("/PickCard", [&](const httplib::Request& req, Response& res) {
         std::string playerId = req.get_header_value("Cookie");
         int index = -1;
@@ -224,12 +221,13 @@ void DraftServer::Start()
         });
 
     svr.listen("0.0.0.0", 1234);
-    
 }
 
+//laddar in korten för bilderna utifrån en lokal resurs
 void DraftServer::LoadAvailableCards()
 {
-    std::filesystem::path imagesPath = std::filesystem::path("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML\\CardImages");
+    std::string tempstring = pointOfEntry;
+    std::filesystem::path imagesPath = std::filesystem::path(tempstring.append("\\CardImages"));
 
     for (auto const& card : std::filesystem::directory_iterator{imagesPath})
     {
@@ -240,7 +238,7 @@ void DraftServer::LoadAvailableCards()
 }
 
 
-
+//metoden för när man hosta en lobby
 std::string DraftServer::HostLobby(const std::string& playerId)
 {   
 
@@ -253,7 +251,7 @@ std::string DraftServer::HostLobby(const std::string& playerId)
     std::string stringToReturn = std::to_string(lobbyId -1);
     return stringToReturn;
 }
-
+//ofärdig metod för när man ska ta bort en lobby
 void DraftServer::RemoveLobby(const std::string& lobbyId)
 {   
     std::lock_guard<std::mutex> lockGuard(serverMutex);

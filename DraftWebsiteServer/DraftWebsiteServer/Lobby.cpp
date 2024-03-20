@@ -1,7 +1,9 @@
 #include "Lobby.h"
 #include <algorithm>
 #include <random>
+//Lobby är objektet för de lobbies av spelare som skapas
 
+//När en spelare vill välja att ta ett kort. Man kan inte ta ett nytt kort förrän alla andra har tagit 
 void Lobby::PickCard(const std::string &playerId, int index)
 {	
 
@@ -43,7 +45,7 @@ void Lobby::PickCard(const std::string &playerId, int index)
 		RotatePacks(rotatePack);
 	}
 }
-
+//När alla spelare har tagit 1 kort så startas en ny omgång där packen roterar.
 void Lobby::RotatePacks(bool allPlayersHavePicked)
 {	
 	{
@@ -73,12 +75,14 @@ void Lobby::RotatePacks(bool allPlayersHavePicked)
 	}
 }
 
+//oanvänd metod
 bool Lobby::IsDraftFinished()
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	return draftFinished;
 }
 
+//När en ny spelare vill joina lobbyn 
 void Lobby::AddConnectedPlayer(const std::string &playerId)
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
@@ -89,6 +93,7 @@ void Lobby::AddConnectedPlayer(const std::string &playerId)
 	}
 }
 
+//När man vill få de kortet man har tillgänglighet för att drafta 
 std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playerId)
 {	
 	std::vector<std::string> stringToReturn;
@@ -107,7 +112,7 @@ std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playe
 }
 
 
-
+//När man vill få kortet man redan har tagit
 std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
@@ -125,6 +130,7 @@ std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 	return stringToReturn;
 }
 
+//frågar om en spelare redan är med i lobbyn. 
 bool Lobby::IsPlayerConnected(const std::string& playerId)
 {	
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
@@ -136,6 +142,7 @@ bool Lobby::IsPlayerConnected(const std::string& playerId)
 	return false;
 }
 
+//Skapar packsen. Är utifrån en finit lista som är slumpad
 void Lobby::CreatePacks()
 {	
 
@@ -160,6 +167,7 @@ void Lobby::CreatePacks()
 	packsCreated += 1;
 }
 
+//Frågar om lobbyn har startat
 bool Lobby::HasLobbyStarted()
 {
 
@@ -168,13 +176,14 @@ bool Lobby::HasLobbyStarted()
 	return lobbyStarted;
 }
 
+//Ser vem som har hostat lobbyn
 const std::string& Lobby::GetHost()
 {
 
 
 	return host;
 }
-
+//får en lista av alla connectade spelare
 std::vector<std::string> Lobby::GetConnectedPlayers()
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
@@ -187,6 +196,8 @@ std::vector<std::string> Lobby::GetConnectedPlayers()
 
 	return messageToReturn;
 }
+
+//Startar en lobby. När en lobby är startad kan man inte längre gå med i den. 
 void Lobby::StartLobby(const std::vector<std::string> &availableCards) 
 {
 

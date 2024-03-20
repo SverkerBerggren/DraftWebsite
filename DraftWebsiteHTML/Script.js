@@ -16,6 +16,7 @@ let startForm = document.getElementById("StartForm");
 let joinButton = document.getElementById("JoinButton");
 let joinInput = document.getElementById("InputFieldJoin");
 
+let lobbyIdText = document.getElementById("lobbyIdText");
 
 let inputCardsPerPack = document.getElementById("InputFieldCardPerPack");
 let inputAmountOfPacks = document.getElementById("InputFieldAmountOfPack");
@@ -59,6 +60,8 @@ downloadButton.hidden = true;
 
 startLobbyButton.onclick = StartLobby;
 
+
+
 async function HostLobby()
 {
 
@@ -66,9 +69,15 @@ async function HostLobby()
     startForm.remove();
     response = await fetch("/HostLobby",{
         method: "Post"
-    }).then((response) => response.text()).then((text) =>{
-        hostedLobbyId = text;
-        console.log(text);
+    }).then((response) => response.json()).then((json) =>{
+        
+        if(json["Accepted"])
+        {
+            hostedLobbyId = json["LobbyId"];
+            lobbyIdText.textContent = "Lobby id: " + json["LobbyId"];
+        }
+
+        console.log(json);
     });
 
 
@@ -239,25 +248,6 @@ function StartDraft()
 
 }
 
-
-async function ShowDraftableCardsServer()
-{
-    await fetch("/AvailableCards",{
-    method: "Get"
-    }).then((response) => response.text()).then((text) => {
-        console.log(text);
-        cards = text.split(":");
-        console.log(cards);
-
-        for(i = 0; i  < cards.length; i++)
-        {
-            CreateDraftableCard(cards[i],i);
-        }
-      });
-  
-    
-
-}
 
 
 //Tagen från https://ourcodeworld.com/articles/read/189/how-to-create-a-file-and-generate-a-download-with-javascript-in-the-browser-without-a-server

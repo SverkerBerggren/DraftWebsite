@@ -8,12 +8,22 @@
 #include "DraftServer.h"
 using namespace httplib;
 
-
-int main()
+//main funktionen. Argumentet man skickar in fungerar som entrypointen för de sparade resurserna 
+int main(int argc, char* argv[])
 {
 	DraftServer draftServer;
+	if (argc == 1)
+	{
+		draftServer.Start("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML");
+	}
+	else
+	{	
+		if (argc == 2)
+		{
+			draftServer.Start( std::string(argv[1]));
 
-	draftServer.Start();
+		}
+	}
 
 	return 0;
 }

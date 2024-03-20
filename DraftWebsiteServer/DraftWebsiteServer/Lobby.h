@@ -6,6 +6,8 @@
 #include <map>
 #include <mutex>
 
+
+//alla dessa beskrivs i cpp filen 
 class Lobby
 {
 
