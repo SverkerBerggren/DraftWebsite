@@ -9,7 +9,7 @@ void Lobby::PickCard(const std::string &playerId, int index)
 	{
 		std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 
-		if (index < 0 || index > playerPacks[playerId].size() || playerPacks[playerId].size() == 0)
+		if (index < 0 || index >= playerPacks[playerId].size() || playerPacks[playerId].size() == 0)
 		{
 			return;
 		}
@@ -47,15 +47,14 @@ void Lobby::PickCard(const std::string &playerId, int index)
 void Lobby::RotatePacks(bool allPlayersHavePicked)
 {	
 	{
-		std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
+		std::lock_guard<std::mutex> lockGuard(*lobbyMutex);
 
 		std::vector<std::string> firstElement = playerPacks.begin()->second;
-		for (std::map<std::string, std::vector<std::string>>::iterator iterator = playerPacks.begin(); iterator != playerPacks.end();)
+		for (std::map<std::string, std::vector<std::string>>::iterator iterator = playerPacks.begin(); iterator != playerPacks.end(); ++iterator)
 		{
-			auto nextElement = ++iterator;
+			auto nextElement = std::next(iterator);
 			if (nextElement == playerPacks.end())
 			{
-				--iterator;
 				iterator->second = firstElement;
 				break;
 			}
@@ -92,8 +91,12 @@ void Lobby::AddConnectedPlayer(const std::string &playerId)
 
 std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playerId)
 {	
-	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	std::vector<std::string> stringToReturn;
+	if (playerHavePicked[playerId])
+	{
+		return stringToReturn;
+	}
+	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 
 	for (int i = 0; i < playerPacks[playerId].size(); i++)
 	{
@@ -122,6 +125,16 @@ std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 	return stringToReturn;
 }
 
+bool Lobby::IsPlayerConnected(const std::string& playerId)
+{	
+	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
+	if (std::find(connectedPlayers.begin(), connectedPlayers.end(), playerId) != connectedPlayers.end())
+	{
+		return true;
+	}
+
+	return false;
+}
 
 void Lobby::CreatePacks()
 {	
@@ -162,21 +175,17 @@ const std::string& Lobby::GetHost()
 	return host;
 }
 
-std::string Lobby::GetConnectedPlayers()
+std::vector<std::string> Lobby::GetConnectedPlayers()
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
-	std::string stringToReturn = "";
+	std::vector<std::string> messageToReturn;
 
 	for (int i = 0; i < connectedPlayers.size(); i++)
 	{
-		stringToReturn += connectedPlayers[i];
-		if (i != connectedPlayers.size() - 1)
-		{
-			stringToReturn += ":";
-		}
+		messageToReturn.push_back(connectedPlayers[i]);
 	}
 
-	return stringToReturn;
+	return messageToReturn;
 }
 void Lobby::StartLobby(const std::vector<std::string> &availableCards) 
 {
@@ -188,7 +197,7 @@ void Lobby::StartLobby(const std::vector<std::string> &availableCards)
 
 		shuffledCardList = availableCards;
 
-		auto rng = std::default_random_engine{};
+		auto rng = std::default_random_engine(std::_Random_device());
 		std::shuffle(shuffledCardList.begin(), shuffledCardList.end(), rng);
 
 		if (shuffledCardList.size() < connectedPlayers.size() * cardsPerPack * amountOfPacks)

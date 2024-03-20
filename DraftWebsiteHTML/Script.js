@@ -23,6 +23,8 @@ let inputAmountOfPlayers = document.getElementById("InputFieldAmountOfPlayers");
 
 let playersJoinedArea = document.getElementById("PlayersJoined");
 
+let startLobbyButton = document.getElementById("startLobbyButton");
+
 HideHighlightCard();
 
 joinButton.onclick = JoinLobby;
@@ -52,14 +54,15 @@ hostButton.onclick = HostLobby;
 
 //HostLobby();
 
-
+continueHasLobbyStarted = true;
 downloadButton.hidden = true;
 
-
+startLobbyButton.onclick = StartLobby;
 
 async function HostLobby()
 {
 
+    startLobbyButton.hidden = false;
     startForm.remove();
     response = await fetch("/HostLobby",{
         method: "Post"
@@ -67,6 +70,10 @@ async function HostLobby()
         hostedLobbyId = text;
         console.log(text);
     });
+
+
+
+    UpdateJoinedPlayers();
 
     UpdateDraftableCardsLoop();
 }
@@ -80,6 +87,8 @@ async function JoinLobby()
             if(text == "Accepted")
             {
                 startForm.remove();
+                UpdateJoinedPlayers();
+                UpdateLobbyStarted();
             }
 
             console.log(text);
@@ -135,13 +144,13 @@ async function UpdateJoinedPlayers()
 {
     while(continuePlayerUpdate)
     {
-        response = await fetch("/UpdatePlayers",{
-            method: "Get",
+        response = await fetch("/Update",{
+            method: "Post",
             signal: AbortSignal.timeout(15000),
-            body: joinedLobbyId
-            }).then((response) => response.text()).then((text) => {
+            body: "ConnectedPlayers"
+            }).then((response) => response.json()).then((json) => {
                 
-                message = text.split(":");
+                message = json["ConnectedPlayers"];
 
                 RemoveChildren(playersJoinedArea);
 
@@ -151,14 +160,32 @@ async function UpdateJoinedPlayers()
                     paragraph.textContent = message[i];
                     playersJoinedArea.append(paragraph);
                 }
-
-                console.log(text);
+                console.log(message);
               });
 
         await sleep(3000);
     }
 }
+async function UpdateLobbyStarted()
+{
+    while(continueHasLobbyStarted)
+    {
+        response = await fetch("/Update",{
+            method: "Post",
+            signal: AbortSignal.timeout(15000),
+            body: "HasLobbyStarted"
+            }).then((response) => response.json()).then((json) => {
+                
+                if(json["HasLobbyStarted"])
+                {
+                    UpdateDraftableCardsLoop();
+                    continueHasLobbyStarted = false;
+                }
+              });
 
+        await sleep(3000);
+    }
+}
 
 //snodd kod
 function arraysEqual(a, b) {

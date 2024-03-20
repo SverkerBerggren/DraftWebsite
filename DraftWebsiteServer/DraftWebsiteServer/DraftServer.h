@@ -13,23 +13,21 @@ private:
     int playerCookieId = 0;
 
     std::mutex serverMutex = std::mutex();
-    
-public: 
     httplib::Server svr;
 
     std::unordered_map<std::string, std::string> playerToLobby;
 
     std::unordered_map<std::string, Lobby> activeLobbies;
 
-    std::vector<std::string> availableCards; 
+    std::vector<std::string> availableCards;
 
 
-    std::string HostLobby(std::string playerId);
+    void RemoveLobby(const std::string& lobbyId);
 
-    void HostLobbyRequest(const httplib::Request& req, httplib::Response& res);
-    void JoinLobbyRequest(const httplib::Request& req, httplib::Response& res);
-    void GetHTMLRequest(const httplib::Request& req, httplib::Response& res);
-    void GetDraftableCardsRequest(const httplib::Request& req, httplib::Response& res);
+    std::string HostLobby(const std::string& playerId);
+    
+public: 
+
 
     void Start();
 };

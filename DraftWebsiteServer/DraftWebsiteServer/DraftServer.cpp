@@ -27,7 +27,7 @@ void DraftServer::Start()
         res.set_content(html, "text/html");
         if (req.get_header_value("Cookie") == "")
         {
-            res.set_header("Set-Cookie", "PlayerId=" + std::to_string(playerCookieId) + "; Expires=Thu, 21 Apr 2024 07:28:00 GMT;");
+            res.set_header("Set-Cookie", "PlayerId = " + std::to_string(playerCookieId) + "; Expires=Thu, 21 Apr 2024 07:28:00 GMT;");
         }
         playerCookieId += 1;
         std::cout << html.size() << std::endl;
@@ -68,13 +68,21 @@ void DraftServer::Start()
                 {
                     message["DraftableCards"] = activeLobbies[iterator->second].GetDraftableCardsPlayer(playerId);
                     message["DraftFinished"] = activeLobbies[iterator->second].IsDraftFinished();
-                }   
 
+                }   
+                else if (updateType._Equal("ConnectedPlayers"))
+                {
+                    message["ConnectedPlayers"] = activeLobbies[iterator->second].GetConnectedPlayers();
+                }
+                else if (updateType._Equal("HasLobbyStarted"))
+                {
+                    message["HasLobbyStarted"] = activeLobbies[iterator->second].HasLobbyStarted();
+                }
             }
         }
         
-        std::cout << "update grejen " << std::endl;
-        std::string debugString = message.dump();
+        std::cout << "update grejen " << updateType << std::endl;
+        //std::string debugString = message.dump();
         res.set_content(message.dump(), "text/plain");
 
         });
@@ -98,27 +106,30 @@ void DraftServer::Start()
 
         });
 
-    std::function<void(const Request&, Response&)> hostLobbyFunction = [&](const Request&, Response&) {&DraftServer::HostLobbyRequest; };
   //  svr.Post("/HostLobby", hostLobbyFunction);
 
     svr.Post("/HostLobby", [&](const httplib::Request& req, Response& res) {
   
             std::string playerId = req.get_header_value("Cookie");
-            std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
-
-            
-            if (playerToLobby.find(playerId) == playerToLobby.end())
+            bool shouldHostLobby = false;
             {
-  
-                res.set_content( "hostat lobby id" + HostLobby(playerId), "text/plain");
+                std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
+                auto iterator = playerToLobby.find(playerId);
+                if (iterator == playerToLobby.end())
+                {
+                    shouldHostLobby = true;
+                }
 
+            }
+            if (shouldHostLobby)
+            {
+                res.set_content("hostat lobby id " + HostLobby(playerId), "text/plain");
             }
             else
             {
                 res.set_content("redan i lobby", "text/plain");
-
             }
-  
+            
             std::cout << "host grejen " << playerId << std::endl;
         });
 
@@ -129,7 +140,7 @@ void DraftServer::Start()
         auto iterator = activeLobbies.find(playerToLobby[playerId]);
         if (iterator != activeLobbies.end())
         {
-            if (playerId._Equal(iterator->second.GetHost()))
+            if (playerId._Equal(iterator->second.GetHost()) && !iterator->second.HasLobbyStarted())   
             {
                 iterator->second.StartLobby(availableCards);
                 res.set_content("lobby started", "text/plain");
@@ -146,16 +157,28 @@ void DraftServer::Start()
     svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {    
         std::string playerId = req.get_header_value("Cookie");
         std::string lobbyId = req.body;
+
+
         std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
         {
             auto iterator = activeLobbies.find(lobbyId);
+
             if (iterator != activeLobbies.end())
             {
                 if (!iterator->second.HasLobbyStarted())
-                {
-                    playerToLobby[playerId] = req.body;
-                    iterator->second.AddConnectedPlayer(playerId);
-                    res.set_content("Accepted", "text/plain");
+                {   
+                    if (iterator->second.IsPlayerConnected(playerId))
+                    {
+                        res.set_content("Already connected", "text/plain");
+
+                    }
+                    else
+                    {
+                        playerToLobby[playerId] = req.body;
+                        iterator->second.AddConnectedPlayer(playerId);
+                        res.set_content("Accepted", "text/plain");
+                    }
+
                 }
                 else
                 {
@@ -170,28 +193,6 @@ void DraftServer::Start()
         std::cout << "join grejen " <<playerId  << std::endl;
         });
 
-
-    svr.Post("/UpdatePlayers", [&](const httplib::Request& req, Response& res) {
-        std::string playerId = req.get_header_value("Cookie");
-        std::string lobbyId = req.body;
-        {
-            std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
-            auto iterator = activeLobbies.find(playerToLobby[playerId]);
-            if (iterator != activeLobbies.end())
-            {
-
-                playerToLobby[playerId] = req.body;
-                iterator->second.AddConnectedPlayer(playerId);
-                res.set_content("Accepted", "text/plain");
-                res.body = iterator->second.GetConnectedPlayers();
-            }
-            else
-            {
-                res.set_content("nej", "text/plain");
-            }
-        }
-        std::cout << "join grejen " << playerId << std::endl;
-        });
 
     svr.Post("/PickCard", [&](const httplib::Request& req, Response& res) {
         std::string playerId = req.get_header_value("Cookie");
@@ -240,29 +241,42 @@ void DraftServer::LoadAvailableCards()
 
 
 
-std::string DraftServer::HostLobby(std::string playerId)
+std::string DraftServer::HostLobby(const std::string& playerId)
 {   
 
-
+    std::lock_guard<std::mutex> lockGuard(serverMutex);
      
     activeLobbies[std::to_string(lobbyId)] = Lobby(playerId, 3, 3);
-    activeLobbies[std::to_string(lobbyId)].StartLobby(availableCards);
+//    activeLobbies[std::to_string(lobbyId)].StartLobby(availableCards);
     playerToLobby[playerId] =  std::to_string(lobbyId);
     lobbyId += 1;
     std::string stringToReturn = std::to_string(lobbyId -1);
     return stringToReturn;
 }
 
-void DraftServer::HostLobbyRequest(const httplib::Request& req, httplib::Response& res)
-{
+void DraftServer::RemoveLobby(const std::string& lobbyId)
+{   
+    std::lock_guard<std::mutex> lockGuard(serverMutex);
 
-    std::string playerId = req.get_header_value("Cookie");
-
-    if (playerToLobby.find(playerId) != playerToLobby.end())
+    auto activeLobbiesIterator = activeLobbies.find(lobbyId);
+    if(activeLobbiesIterator != activeLobbies.end())
     {
+        activeLobbies.erase(activeLobbiesIterator);
+    }
+    
+    std::vector<std::string> playersToRemove;
 
-        res.set_content(HostLobby(playerId), "text/plain");
+    for (std::pair<const std::string, std::string> playerToRemove : playerToLobby)
+    {
+        if (playerToRemove.second._Equal(lobbyId))
+        {
+            playersToRemove.push_back(playerToRemove.first);
+        }
     }
 
-    std::cout << "host grejen " << playerId << std::endl;
+    for (std::string playerToRemove : playersToRemove)
+    {
+        playerToLobby.erase(playerToRemove);
+    }
+
 }

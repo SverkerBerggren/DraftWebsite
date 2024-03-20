@@ -54,7 +54,9 @@ public:
 
 	std::vector<std::string> GetDraftableCardsPlayer(const std::string& playerId);
 	std::string GetPickedCardsPlayer(const std::string& playerId);
-	std::string GetConnectedPlayers();
+	std::vector<std::string> GetConnectedPlayers();
+
+	bool IsPlayerConnected(const std::string& playerId);
 
 	const std::string& GetHost();
 
