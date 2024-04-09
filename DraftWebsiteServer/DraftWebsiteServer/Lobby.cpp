@@ -6,7 +6,7 @@
 //När en spelare vill välja att ta ett kort. Man kan inte ta ett nytt kort förrän alla andra har tagit 
 void Lobby::PickCard(const std::string &playerId, int index)
 {	
-
+	UpdateTimeStamp();
 	bool rotatePack = false;
 	{
 		std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
@@ -47,7 +47,9 @@ void Lobby::PickCard(const std::string &playerId, int index)
 }
 //När alla spelare har tagit 1 kort så startas en ny omgång där packen roterar.
 void Lobby::RotatePacks(bool allPlayersHavePicked)
-{	
+{
+	UpdateTimeStamp();
+
 	{
 		std::lock_guard<std::mutex> lockGuard(*lobbyMutex);
 
@@ -76,7 +78,7 @@ void Lobby::RotatePacks(bool allPlayersHavePicked)
 }
 
 //oanvänd metod
-bool Lobby::IsDraftFinished()
+const bool Lobby::IsDraftFinished()
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	return draftFinished;
@@ -85,6 +87,8 @@ bool Lobby::IsDraftFinished()
 //När en ny spelare vill joina lobbyn 
 void Lobby::AddConnectedPlayer(const std::string &playerId)
 {
+	UpdateTimeStamp();
+
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 
 	if (std::find(connectedPlayers.begin(), connectedPlayers.end(), playerId) == connectedPlayers.end())
@@ -94,8 +98,10 @@ void Lobby::AddConnectedPlayer(const std::string &playerId)
 }
 
 //När man vill få de kortet man har tillgänglighet för att drafta 
-std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playerId)
-{	
+const std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playerId)
+{
+	UpdateTimeStamp();
+
 	std::vector<std::string> stringToReturn;
 	if (playerHavePicked[playerId])
 	{
@@ -113,8 +119,10 @@ std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playe
 
 
 //När man vill få kortet man redan har tagit
-std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
+const std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 {
+	UpdateTimeStamp();
+
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	std::string stringToReturn = "";
 
@@ -131,7 +139,7 @@ std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 }
 
 //frågar om en spelare redan är med i lobbyn. 
-bool Lobby::IsPlayerConnected(const std::string& playerId)
+const bool Lobby::IsPlayerConnected(const std::string& playerId)
 {	
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	if (std::find(connectedPlayers.begin(), connectedPlayers.end(), playerId) != connectedPlayers.end())
@@ -168,8 +176,9 @@ void Lobby::CreatePacks()
 }
 
 //Frågar om lobbyn har startat
-bool Lobby::HasLobbyStarted()
+const bool Lobby::HasLobbyStarted()
 {
+	UpdateTimeStamp();
 
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	
@@ -184,8 +193,10 @@ const std::string& Lobby::GetHost()
 	return host;
 }
 //får en lista av alla connectade spelare
-std::vector<std::string> Lobby::GetConnectedPlayers()
+const std::vector<std::string> Lobby::GetConnectedPlayers()
 {
+	UpdateTimeStamp();
+
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	std::vector<std::string> messageToReturn;
 
@@ -197,9 +208,21 @@ std::vector<std::string> Lobby::GetConnectedPlayers()
 	return messageToReturn;
 }
 
+void Lobby::UpdatePlayerSeenLobbyEnded(const std::string& playerId)
+{
+	std::lock_guard<std::mutex> lockGuard(*lobbyMutex);
+
+	playerReciviedLobbyEnded[playerId] = true;
+
+	for (auto value : UpdatePlayerSeenLobbyEnded) {
+
+	}
+}
+
 //Startar en lobby. När en lobby är startad kan man inte längre gå med i den. 
 void Lobby::StartLobby(const std::vector<std::string> &availableCards) 
 {
+	UpdateTimeStamp();
 
 	{
 		std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);

@@ -126,6 +126,13 @@ void DraftServer::Start(const std::string& entryPoint)
                 res.set_content(message.dump(), "text/plain");
             }
             
+            currentRequestsBeforeDestroy += 1;
+            if (currentRequestsBeforeDestroy >= maxRequestsBeforeLobbyDestroy)
+            {   
+                RemoveInactiveLobbies();
+                currentRequestsBeforeDestroy = 0;
+            }
+
             std::cout << "host grejen " << playerId << std::endl;
         });
     //Requesten som behandlar när en spelare vill starta lobbyn. Går bara om man är spelaren som hostade lobbyn
@@ -250,6 +257,29 @@ std::string DraftServer::HostLobby(const std::string& playerId)
     lobbyId += 1;
     std::string stringToReturn = std::to_string(lobbyId -1);
     return stringToReturn;
+}
+void DraftServer::RemoveInactiveLobbies()
+{
+    std::vector<std::string> lobbysToRemove;
+    {
+        std::lock_guard<std::mutex> lockguard(serverMutex);
+        auto iterator = activeLobbies.begin();
+
+
+        for (; iterator != activeLobbies.end(); iterator++)
+        {
+            if (std::chrono::minutes(minutesBeforeDestruction) < std::chrono::system_clock::now() - iterator->second.GetTimeStamp())
+            {
+                lobbysToRemove.push_back(iterator->first);
+            }
+        }
+    }
+    
+    for (int i = 0; i < lobbysToRemove.size(); i++)
+    {
+        RemoveLobby(lobbysToRemove[i]);
+    }
+
 }
 //ofärdig metod för när man ska ta bort en lobby
 void DraftServer::RemoveLobby(const std::string& lobbyId)
