@@ -121,6 +121,7 @@ async function UpdateDraftableCardsLoop()
 {
     while(continueDraftableCardsLoop)
     {
+        shouldEndDraft = false;
         response = await fetch("/Update",{
             method: "Post",
             signal: AbortSignal.timeout(15000),
@@ -134,6 +135,8 @@ async function UpdateDraftableCardsLoop()
                 {
                     FinishDraftAndShowCards();
                     continueDraftableCardsLoop = false;
+                    shouldEndDraft = true;
+              
                 }
                 else
                 {
@@ -145,7 +148,13 @@ async function UpdateDraftableCardsLoop()
                 }
 
               });
-
+        
+              if(shouldEndDraft)
+              {
+                await fetch("/ReceivedDraftFinished",{
+                    method: "Post"
+                });
+              }
         await sleep(1000);
     }
 }

@@ -37,6 +37,7 @@ void DraftServer::Start(const std::string& entryPoint)
             res.set_header("Set-Cookie", "PlayerId = " + std::to_string(playerCookieId) + "; Expires=Thu, 21 Apr 2024 07:28:00 GMT;");
         }
         playerCookieId += 1;
+        std::cout << "hur manga lobbies " << std::to_string(activeLobbies.size()) << std::endl;
         std::cout << html.size() << std::endl;
         });
 
@@ -69,6 +70,7 @@ void DraftServer::Start(const std::string& entryPoint)
                 {
                     message["HasLobbyStarted"] = activeLobbies[iterator->second].HasLobbyStarted();
                 }
+
             }
         }
         
@@ -77,7 +79,34 @@ void DraftServer::Start(const std::string& entryPoint)
         res.set_content(message.dump(), "text/plain");
 
         });
+    svr.Post("/ReceivedDraftFinished", [&](const httplib::Request& req, Response& res) {
+        std::string playerId = req.get_header_value("Cookie");
+        json message;
 
+        bool shouldRemoveLobby = false;
+        std::string lobbyToRemove;
+        std::string updateType = req.body;
+        {
+            std::lock_guard<std::mutex> lockGuard(serverMutex);
+            auto iterator = playerToLobby.find(playerId);
+            if (iterator != playerToLobby.end())
+            {
+                activeLobbies[iterator->second].UpdatePlayerSeenLobbyEnded(iterator->first);
+                if (activeLobbies[iterator->second].HasLobbyEnded())
+                {
+                    shouldRemoveLobby = true;
+                    lobbyToRemove = iterator->second;
+                }
+            } 
+        }
+
+        if (shouldRemoveLobby)
+        {
+            RemoveLobby(lobbyToRemove);
+        }
+
+        res.set_content("", "text/plain");
+        });
     //Requesten som behandlar när en spelare vill se kortet de har tagit digiare
     svr.Get("/PickedCards", [&](const httplib::Request& req, Response& res) {
 
@@ -181,6 +210,7 @@ void DraftServer::Start(const std::string& entryPoint)
                         playerToLobby[playerId] = req.body;
                         iterator->second.AddConnectedPlayer(playerId);
                         res.set_content("Accepted", "text/plain");
+                        
                     }
 
                 }

@@ -36,9 +36,15 @@ private:
 
 	std::string host; 
 
+	bool lobbyHasEnded = false;
+
 	bool lobbyStarted = false;
 	std::chrono::system_clock::time_point timeStampLastAction;
 
+	void RotatePacks(bool allPlayersHavePicked);
+
+	void CreatePacks();
+	void UpdateTimeStamp() { std::lock_guard<std::mutex> lockGuard(*lobbyMutex);  timeStampLastAction = std::chrono::system_clock::now(); }
 
 public: 
 
@@ -47,11 +53,9 @@ public:
 
 	void PickCard(const std::string &playerId, int index);
 
-	void CreatePacks();
 
 	void StartLobby(const  std::vector<std::string> &availableCards);
 
-	void RotatePacks(bool allPlayersHavePicked);
 
 	void AddConnectedPlayer(const std::string &playerId);
 
@@ -67,8 +71,7 @@ public:
 
 	const bool IsDraftFinished();
 
-	void UpdateTimeStamp() { std::lock_guard<std::mutex> lockGuard(*lobbyMutex);  timeStampLastAction = std::chrono::system_clock::now(); }
-
+	const bool HasLobbyEnded() { std::lock_guard<std::mutex> lockguard(*lobbyMutex); return lobbyHasEnded; }
 	const std::chrono::system_clock::time_point& GetTimeStamp() { std::lock_guard<std::mutex> lockGuard(*lobbyMutex); return timeStampLastAction; }
 
 	void UpdatePlayerSeenLobbyEnded(const std::string&	playerId);

@@ -214,9 +214,12 @@ void Lobby::UpdatePlayerSeenLobbyEnded(const std::string& playerId)
 
 	playerReciviedLobbyEnded[playerId] = true;
 
-	for (auto value : UpdatePlayerSeenLobbyEnded) {
-
+	if (playerReciviedLobbyEnded.size() >= connectedPlayers.size())
+	{
+		lobbyHasEnded = true;
 	}
+	//
+	//}
 }
 
 //Startar en lobby. När en lobby är startad kan man inte längre gå med i den. 
