@@ -64,11 +64,17 @@ startLobbyButton.onclick = StartLobby;
 
 async function HostLobby()
 {
+    amountOfPacks = inputAmountOfPacks.value;
+    mainDeckCardsPerPack = inputCardsPerPack.value;
+    jsonMessage = {amountOfPacks: amountOfPacks, mainDeckCardsPerPack: mainDeckCardsPerPack}
+
+    
 
     startLobbyButton.hidden = false;
     startForm.remove();
     response = await fetch("/HostLobby",{
-        method: "Post"
+        method: "Post",
+        body: JSON.stringify(jsonMessage) 
     }).then((response) => response.json()).then((json) =>{
         
         if(json["Accepted"])
@@ -77,7 +83,7 @@ async function HostLobby()
             lobbyIdText.textContent = "Lobby id: " + json["LobbyId"];
         }
 
-        console.log(json);
+       // console.log(json);
     });
 
 
@@ -100,18 +106,22 @@ async function JoinLobby()
                 UpdateLobbyStarted();
             }
 
-            console.log(text);
+            //console.log(text);
           });
 }
 
 async function StartLobby()
 {
+    //jsonMessage = JSON.parse("");
+
+
 
     response = await fetch("/StartLobby",{
         method: "Post"
+        
     }).then((response) => response.text()).then((text) =>{
         
-        console.log(text);
+        //console.log(text);
     });
     
     //UpdateLoop();
@@ -129,8 +139,8 @@ async function UpdateDraftableCardsLoop()
             }).then((response) => response.json()   ).then((json) => {
                 
 
-                console.log(json);
-                console.log(currentDraftableCards);
+                //console.log(json);
+               // console.log(currentDraftableCards);
                 if(json["DraftFinished"] == true)
                 {
                     FinishDraftAndShowCards();
@@ -244,7 +254,7 @@ function StartDraft()
     
     amountOfPacks = inputAmountOfPacks.value;
     cardsPerPack = inputCardsPerPack.value;
-    amountOfPlayers = inputAmountOfPlayers.value;
+    //amountOfPlayers = inputAmountOfPlayers.value;
     
     
     startForm.remove();
@@ -319,6 +329,8 @@ function CreateDraftableCard(cardName, index)
 
     card.append(cardImage);
 
+    console.log("CardImages/" + cardName);
+
     cardImage.className = "DraftableCard";
 
 
@@ -346,7 +358,7 @@ function CreateDraftableCard(cardName, index)
     card.addEventListener("pointerleave",HideHighlightCard);
 
 
-    console.log("detta hander");
+    //console.log("detta hander");
 
     
 
@@ -415,7 +427,7 @@ async function UpdateDraftedCards()
 
 async function FinishDraftAndShowCards()
 {   
-
+    continuePlayerUpdate = false;
     let cardsDrafted = "";
     let draftedCards;
     response = await fetch("/PickedCards",{
@@ -434,7 +446,7 @@ async function FinishDraftAndShowCards()
 
        
        let name =  draftedCards[i].split(".");
-        console.log(name);
+        //console.log(name);
        cardsDrafted += name[0] + "\n";
        
     }
@@ -445,6 +457,6 @@ async function FinishDraftAndShowCards()
 
         download("Drafted deck",cardsDrafted);
     })
-
+    currentDraftableCards = [];
     controller.abort();
 }

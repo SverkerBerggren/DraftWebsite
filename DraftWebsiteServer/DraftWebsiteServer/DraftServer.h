@@ -21,7 +21,8 @@ private:
 
     std::unordered_map<std::string, Lobby> activeLobbies;
 
-    std::vector<std::string> availableCards;
+    std::vector<std::string> availableMainDeckCards;
+    std::vector<std::string> availableExtraCards;
 
     std::string pointOfEntry;
 

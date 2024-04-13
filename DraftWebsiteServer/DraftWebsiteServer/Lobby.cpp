@@ -155,20 +155,47 @@ void Lobby::CreatePacks()
 {	
 
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
+
+
 	if (packsCreated == amountOfPacks)
 	{
 		draftFinished = true;
 		return;
 	}
 
-	for (int i = 0; i < connectedPlayers.size(); i++)
+	std::vector<std::string>* listToUse; 
+	int amountToUse = 0; 
+	if (useExtraDeck)
 	{
-		playerPacks[connectedPlayers[i]];
-
-		for (int z = 0; z < cardsPerPack; z++)
+		if (shouldCreateExtraDeckPack)
 		{
-			playerPacks[connectedPlayers[i]].push_back(shuffledCardList.back());
-			shuffledCardList.pop_back();
+			listToUse = &shuffledExtraDeckCards;
+			amountToUse = extraDeckCardsPerPack;
+			shouldCreateExtraDeckPack = false;
+		}
+		else
+		{
+			listToUse = &shuffledMainDeckCards;
+			amountToUse = mainDeckCardsPerPack;
+			shouldCreateExtraDeckPack = true;
+		}
+	}
+	else
+	{
+		listToUse = &shuffledMainDeckCards;
+		amountToUse = mainDeckCardsPerPack;
+	}
+	for (int i = 0; i < connectedPlayers.size(); i++)
+	{	
+		
+
+
+		//playerPacks[connectedPlayers[i]];
+
+		for (int z = 0; z < amountToUse; z++)
+		{
+			playerPacks[connectedPlayers[i]].push_back(listToUse->back());
+			listToUse->pop_back();
 		}
 
 	}
@@ -223,7 +250,7 @@ void Lobby::UpdatePlayerSeenLobbyEnded(const std::string& playerId)
 }
 
 //Startar en lobby. När en lobby är startad kan man inte längre gå med i den. 
-void Lobby::StartLobby(const std::vector<std::string> &availableCards) 
+void Lobby::StartLobby(const std::vector<std::string> &availableCards, const std::vector<std::string> &extraDeckCards) 
 {
 	UpdateTimeStamp();
 
@@ -232,21 +259,40 @@ void Lobby::StartLobby(const std::vector<std::string> &availableCards)
 
 		lobbyStarted = true;
 
-		shuffledCardList = availableCards;
+		shuffledMainDeckCards = availableCards;
 
 		auto rng = std::default_random_engine(std::_Random_device());
-		std::shuffle(shuffledCardList.begin(), shuffledCardList.end(), rng);
+		std::shuffle(shuffledMainDeckCards.begin(), shuffledMainDeckCards.end(), rng);
 
-		if (shuffledCardList.size() < connectedPlayers.size() * cardsPerPack * amountOfPacks)
+		if (shuffledMainDeckCards.size() < connectedPlayers.size() * mainDeckCardsPerPack * amountOfPacks)
 		{
-			int extraCards =  (connectedPlayers.size() * cardsPerPack * amountOfPacks) - shuffledCardList.size() ;
+			int extraCards =  (connectedPlayers.size() * mainDeckCardsPerPack * amountOfPacks) - shuffledMainDeckCards.size() ;
 
 			for (int i = 0; i < extraCards; i++)
 			{
-				shuffledCardList.push_back(shuffledCardList[0]);
+				shuffledMainDeckCards.push_back(shuffledMainDeckCards[0]);
 
 				
 			}
+		}
+		shuffledExtraDeckCards = extraDeckCards;
+
+		std::shuffle(shuffledExtraDeckCards.begin(), shuffledExtraDeckCards.end(), rng);
+
+		if (shuffledExtraDeckCards.size() < connectedPlayers.size() * extraDeckCardsPerPack * amountOfPacks)
+		{
+			int extraCards = (connectedPlayers.size() * extraDeckCardsPerPack * amountOfPacks) - shuffledExtraDeckCards.size();
+
+			for (int i = 0; i < extraCards; i++)
+			{
+				shuffledExtraDeckCards.push_back(shuffledExtraDeckCards[0]);
+
+
+			}
+		}
+		if (useExtraDeck)
+		{
+			amountOfPacks *= 2; 
 		}
 	}
 

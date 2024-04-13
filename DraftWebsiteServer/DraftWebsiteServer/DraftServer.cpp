@@ -73,7 +73,7 @@ void DraftServer::Start(const std::string& entryPoint)
 
             }
         }
-        
+        std::string messageCheck = message.dump();
         std::cout << "update grejen " << updateType << std::endl;
         //std::string debugString = message.dump();
         res.set_content(message.dump(), "text/plain");
@@ -132,6 +132,10 @@ void DraftServer::Start(const std::string& entryPoint)
   
             std::string playerId = req.get_header_value("Cookie");
             json message;
+            std::string string = req.body;
+            json requestMessage = json::parse(string);
+
+             std::string hej = requestMessage.dump();
             bool shouldHostLobby = false;
             {
                 std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
@@ -169,12 +173,17 @@ void DraftServer::Start(const std::string& entryPoint)
 
         std::string playerId = req.get_header_value("Cookie");
         std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
+
+   //     json messageJson = json::parse(req.body);
+
+    //    std::string hej = messageJson.dump();
+        
         auto iterator = activeLobbies.find(playerToLobby[playerId]);
         if (iterator != activeLobbies.end())
         {
             if (playerId._Equal(iterator->second.GetHost()) && !iterator->second.HasLobbyStarted())   
             {
-                iterator->second.StartLobby(availableCards);
+                iterator->second.StartLobby(availableMainDeckCards,availableExtraCards);
                 res.set_content("lobby started", "text/plain");
             }
             res.set_content("du ar inte host", "text/plain");
@@ -263,14 +272,22 @@ void DraftServer::Start(const std::string& entryPoint)
 //laddar in korten för bilderna utifrån en lokal resurs
 void DraftServer::LoadAvailableCards()
 {
-    std::string tempstring = pointOfEntry;
-    std::filesystem::path imagesPath = std::filesystem::path(tempstring.append("\\CardImages"));
+    std::string mainDeckEntry = pointOfEntry;
+    std::string extraDeckEntry = pointOfEntry;
+    std::filesystem::path mainDeckImagesPath = std::filesystem::path(mainDeckEntry.append("\\CardImages\\MainDeck"));
+    std::filesystem::path extraDeckImagesPath = std::filesystem::path(extraDeckEntry.append("\\CardImages\\ExtraDeck"));
 
-    for (auto const& card : std::filesystem::directory_iterator{imagesPath})
+    for (auto const& card : std::filesystem::directory_iterator{mainDeckImagesPath})
     {
-        availableCards.push_back(card.path().filename().string());
+        availableMainDeckCards.push_back( "MainDeck/"+ card.path().filename().string());
 
-        std::cout << card.path().filename().string();
+       // std::cout << card.path().filename().string();
+    }
+    for (auto const& card : std::filesystem::directory_iterator{ extraDeckImagesPath })
+    {
+        availableExtraCards.push_back("ExtraDeck/" + card.path().filename().string());
+
+        // std::cout << card.path().filename().string();
     }
 }
 
@@ -281,8 +298,8 @@ std::string DraftServer::HostLobby(const std::string& playerId)
 
     std::lock_guard<std::mutex> lockGuard(serverMutex);
      
-    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId, 3, 3);
-//    activeLobbies[std::to_string(lobbyId)].StartLobby(availableCards);
+    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId, 3, 3,true,2);
+//    activeLobbies[std::to_string(lobbyId)].StartLobby(availableMainDeckCards);
     playerToLobby[playerId] =  std::to_string(lobbyId);
     lobbyId += 1;
     std::string stringToReturn = std::to_string(lobbyId -1);
@@ -319,7 +336,7 @@ void DraftServer::RemoveLobby(const std::string& lobbyId)
     auto activeLobbiesIterator = activeLobbies.find(lobbyId);
     if(activeLobbiesIterator != activeLobbies.end())
     {
-        activeLobbies.erase(activeLobbiesIterator);
+        activeLobbies.erase( activeLobbiesIterator);
     }
     
     std::vector<std::string> playersToRemove;

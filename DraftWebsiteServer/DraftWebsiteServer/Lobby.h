@@ -23,12 +23,14 @@ private:
 	std::unordered_map<std::string, bool> playerReciviedLobbyEnded;
 	std::unordered_map<std::string, std::vector<std::string>> pickedCards;
 
-	int cardsPerPack = 0;
+	int mainDeckCardsPerPack = 0;
+	int extraDeckCardsPerPack = 0;
 	int amountOfPacks = 0; 
 
 	std::unique_ptr<std::mutex> lobbyMutex = std::make_unique<std::mutex>();
 		
-	std::vector<std::string> shuffledCardList;
+	std::vector<std::string> shuffledMainDeckCards;
+	std::vector<std::string> shuffledExtraDeckCards;
 
 	int packsCreated = 0; 
 
@@ -36,8 +38,10 @@ private:
 
 	std::string host; 
 
+	bool useExtraDeck = true; 
+	bool shouldCreateExtraDeckPack = false; 
+	
 	bool lobbyHasEnded = false;
-
 	bool lobbyStarted = false;
 	std::chrono::system_clock::time_point timeStampLastAction;
 
@@ -54,8 +58,9 @@ public:
 	void PickCard(const std::string &playerId, int index);
 
 
-	void StartLobby(const  std::vector<std::string> &availableCards);
+	void StartLobby(const  std::vector<std::string> &availableCards, const std::vector<std::string> &extraDeckcards);
 
+	
 
 	void AddConnectedPlayer(const std::string &playerId);
 
@@ -76,13 +81,14 @@ public:
 
 	void UpdatePlayerSeenLobbyEnded(const std::string&	playerId);
 
-	Lobby(const std::string &firstPlayer ,int cardsPerPack, int amountOfPacks)
+	Lobby(const std::string &firstPlayer ,int mainDeckCardsPerPack, int amountOfPacks, bool useExtraDeck, int extraDeckCardsPerPack)
 	{
 		connectedPlayers.push_back(firstPlayer);
 		host = firstPlayer;
-		this->cardsPerPack = cardsPerPack;
+		this->mainDeckCardsPerPack = mainDeckCardsPerPack;
 		this->amountOfPacks = amountOfPacks;
 		timeStampLastAction = std::chrono::system_clock::now();
+		this->extraDeckCardsPerPack = extraDeckCardsPerPack;
 		
 	}
 };
