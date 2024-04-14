@@ -19,7 +19,7 @@ currentCardId = ""
 cardId = ""
 
 try:
-    with open("KortIKuben.txt") as textFile:
+    with open("KortExtraDeck.TXT") as textFile:
         for line in textFile: 
             currentIteration +=1
             cardId = line.rstrip()
@@ -27,7 +27,7 @@ try:
             cardImageURL = json.dumps(response["data"][0]["card_images"][0]["image_url"])
             cardImageURL = cardImageURL[1:-1]
             cardImage = requests.get(cardImageURL).content
-            with open( "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML\\CardImages\\MainDeck\\" + cardId + ".jpg", 'wb') as handler:
+            with open( "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML\\CardImages\\ExtraDeck\\" + cardId + ".jpg", 'wb') as handler:
                 handler.write(cardImage)
         time.sleep(0.1)
 except:

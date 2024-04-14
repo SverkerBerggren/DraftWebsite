@@ -34,7 +34,7 @@ void DraftServer::Start(const std::string& entryPoint)
         res.set_content(html, "text/html");
         if (req.get_header_value("Cookie") == "")
         {
-            res.set_header("Set-Cookie", "PlayerId = " + std::to_string(playerCookieId) + "; Expires=Thu, 21 Apr 2024 07:28:00 GMT;");
+            res.set_header("Set-Cookie", "PlayerId = " + std::to_string(playerCookieId) + "; Expires=Thu, 25 Apr 2024 07:28:00 GMT;");
         }
         playerCookieId += 1;
         std::cout << "hur manga lobbies " << std::to_string(activeLobbies.size()) << std::endl;
@@ -74,7 +74,7 @@ void DraftServer::Start(const std::string& entryPoint)
             }
         }
         std::string messageCheck = message.dump();
-        std::cout << "update grejen " << updateType << std::endl;
+     //   std::cout << "update grejen " << updateType << std::endl;
         //std::string debugString = message.dump();
         res.set_content(message.dump(), "text/plain");
 
@@ -122,7 +122,7 @@ void DraftServer::Start(const std::string& entryPoint)
             }
         }
 
-        std::cout << "draftedCards grejen " << stringToReturn << std::endl;
+        //std::cout << "draftedCards grejen " << stringToReturn << std::endl;
         res.set_content(stringToReturn, "text/plain");
 
         });
@@ -134,8 +134,23 @@ void DraftServer::Start(const std::string& entryPoint)
             json message;
             std::string string = req.body;
             json requestMessage = json::parse(string);
+            int amountOfPacks = 0;
+            int cardPerMainDeckPack = 0; 
+            int cardPerExtraDeckPack = 0; 
+            bool parsingSuccessful = false;
+            try
+            {
+                amountOfPacks = std::stoi((std::string)requestMessage["amountOfPacks"]);
+                cardPerMainDeckPack = std::stoi((std::string)requestMessage["mainDeckCardsPerPack"]);
+                cardPerExtraDeckPack = std::stoi((std::string)requestMessage["extraDeckCardsPerPack"]);
+                parsingSuccessful = true;
+            }
+            catch (std::exception e) {
+                std::cout << e.what();
+                parsingSuccessful = false;
+            }
 
-             std::string hej = requestMessage.dump();
+
             bool shouldHostLobby = false;
             {
                 std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
@@ -146,10 +161,10 @@ void DraftServer::Start(const std::string& entryPoint)
                 }
 
             }
-            if (shouldHostLobby)
+            if (shouldHostLobby && parsingSuccessful)
             {   
                 message["Accepted"] = true; 
-                message["LobbyId"] = HostLobby(playerId);
+                message["LobbyId"] = HostLobby(playerId,cardPerMainDeckPack,cardPerExtraDeckPack,amountOfPacks);
                 res.set_content(message.dump(), "text/plain");
             }
             else
@@ -166,7 +181,7 @@ void DraftServer::Start(const std::string& entryPoint)
                 currentRequestsBeforeDestroy = 0;
             }
 
-            std::cout << "host grejen " << playerId << std::endl;
+            //std::cout << "host grejen " << playerId << std::endl;
         });
     //Requesten som behandlar när en spelare vill starta lobbyn. Går bara om man är spelaren som hostade lobbyn
     svr.Post("/StartLobby", [&](const httplib::Request& req, Response& res) {
@@ -192,7 +207,7 @@ void DraftServer::Start(const std::string& entryPoint)
         {
             res.set_content("lobby finns inte", "text/plain");
         }
-        std::cout << "start grejen " << playerId << std::endl;
+       // std::cout << "start grejen " << playerId << std::endl;
         });
     //Requesten som behandlar när en spelare vill gå med en lobby. Man kan bara vara med i en lobby samtidigt
 
@@ -233,7 +248,7 @@ void DraftServer::Start(const std::string& entryPoint)
                 res.set_content("nej", "text/plain");
             }
         }
-        std::cout << "join grejen " <<playerId  << std::endl;
+    //    std::cout << "join grejen " <<playerId  << std::endl;
         });
 
     //metoden när en spelare vill ta ett kort som är tillgängligt till dom 
@@ -248,7 +263,7 @@ void DraftServer::Start(const std::string& entryPoint)
             std::cout << e.what();
         }
 
-        std::cout << "pick grejen " << playerId << std::endl;
+        //std::cout << "pick grejen " << playerId << std::endl;
 
         std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
 
@@ -293,12 +308,12 @@ void DraftServer::LoadAvailableCards()
 
 
 //metoden för när man hosta en lobby
-std::string DraftServer::HostLobby(const std::string& playerId)
+std::string DraftServer::HostLobby(const std::string& playerId, int mainDeckCardsPerPack, int extraDeckCardsPerPack, int amountOfPacks)
 {   
 
     std::lock_guard<std::mutex> lockGuard(serverMutex);
      
-    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId, 3, 3,true,2);
+    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId,mainDeckCardsPerPack, amountOfPacks,true,extraDeckCardsPerPack);
 //    activeLobbies[std::to_string(lobbyId)].StartLobby(availableMainDeckCards);
     playerToLobby[playerId] =  std::to_string(lobbyId);
     lobbyId += 1;

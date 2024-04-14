@@ -28,7 +28,7 @@ private:
 
     void RemoveLobby(const std::string& lobbyId);
 
-    std::string HostLobby(const std::string& playerId);
+    std::string HostLobby(const std::string& playerId, int mainDeckCardsPerPack,int extraDeckCardsPerPack,int amountOfPacks);
 
     int maxRequestsBeforeLobbyDestroy = 45;
     int currentRequestsBeforeDestroy = 0; 

@@ -20,7 +20,7 @@ let lobbyIdText = document.getElementById("lobbyIdText");
 
 let inputCardsPerPack = document.getElementById("InputFieldCardPerPack");
 let inputAmountOfPacks = document.getElementById("InputFieldAmountOfPack");
-let inputAmountOfPlayers = document.getElementById("InputFieldAmountOfPlayers");
+let inputAmountOfExtraDeckCards = document.getElementById("InputFieldAmountOfPlayers");
 
 let playersJoinedArea = document.getElementById("PlayersJoined");
 
@@ -66,7 +66,8 @@ async function HostLobby()
 {
     amountOfPacks = inputAmountOfPacks.value;
     mainDeckCardsPerPack = inputCardsPerPack.value;
-    jsonMessage = {amountOfPacks: amountOfPacks, mainDeckCardsPerPack: mainDeckCardsPerPack}
+    extraDeckCardsPerPack = inputAmountOfExtraDeckCards.value;
+    jsonMessage = {amountOfPacks: amountOfPacks, mainDeckCardsPerPack: mainDeckCardsPerPack, extraDeckCardsPerPack: extraDeckCardsPerPack}
 
     
 
@@ -158,13 +159,7 @@ async function UpdateDraftableCardsLoop()
                 }
 
               });
-        
-              if(shouldEndDraft)
-              {
-                await fetch("/ReceivedDraftFinished",{
-                    method: "Post"
-                });
-              }
+
         await sleep(1000);
     }
 }
@@ -417,12 +412,68 @@ async function UpdateDraftedCards()
 
                 RemoveDraftedCards();
                 message = text.split(":");
-                for(i = 0; i < message.length; i++)
+                
+                sortedList = ReturnSortedDraftedCards(message);
+                for(i = 0; i < sortedList.length; i++)
                 {
-                    AddCardToDraftPile(message[i]);
+                    AddCardToDraftPile(sortedList[i]);
                 }
 
             });
+}
+
+function ReturnSortedDraftedCards(listToSort)
+{
+    let mainDeckCards = [];
+    let extraDeckCards = [];
+
+    let listToReturn = [];
+
+    for( i = 0; i < listToSort.length;i++)
+    {
+        if(listToSort[i].includes("Extra"))
+        {
+            extraDeckCards.push(listToSort[i]);
+        }
+        else
+        {
+            mainDeckCards.push(listToSort[i])
+        }
+    }
+ 
+    for(i = 0; i < mainDeckCards.length; i++)
+    {
+        listToReturn.push(mainDeckCards[i]);
+    }
+    for(i = 0; i < extraDeckCards.length; i++)
+    {
+        listToReturn.push(extraDeckCards[i]);
+    }
+
+    return listToReturn;
+
+}
+
+function TrimCardArray(listToSearch, stringToMatch)
+{
+    let listToReturn = [];
+    for(i = 0; i < listToSearch.length; i++)
+    {
+        console.log("vad searchas")
+        console.log(listToSearch[i]);
+        if(listToSearch[i].includes(stringToMatch))
+        {
+            console.log("har hittats")
+
+            removedJPG = listToSearch[i].split(".");
+            console.log(removedJPG);
+            removedPath = removedJPG[0].split(stringToMatch);
+         //   removeComma = removedPath.slice(0,1);
+            console.log(removedPath)
+            listToReturn.push(removedPath[1]);
+        }
+    }
+    return listToReturn;
 }
 
 async function FinishDraftAndShowCards()
@@ -444,12 +495,26 @@ async function FinishDraftAndShowCards()
 
        CreateDraftableCard(draftedCards[i],i);
 
-       
-       let name =  draftedCards[i].split(".");
+       //let name =  draftedCards[i].split(".");
         //console.log(name);
-       cardsDrafted += name[0] + "\n";
+       //cardsDrafted += name[0] + "\n";
        
     }
+    cardsDrafted += "#main" + "\n";
+    arrayToLoop = TrimCardArray(draftedCards,"MainDeck/");
+
+    for(i = 0; i <arrayToLoop.length ; i++)
+    {   
+        
+        cardsDrafted += arrayToLoop[i] + "\n";
+    }
+    cardsDrafted += "#extra" + "\n";
+    arrayToLoop = TrimCardArray(draftedCards,"ExtraDeck/");
+    for(i = 0; i <arrayToLoop.length ; i++)
+    {
+        cardsDrafted += arrayToLoop[i] + "\n";
+    }
+    cardsDrafted += "!side" + "\n"
 
     downloadButton.hidden = false;
 
@@ -459,4 +524,7 @@ async function FinishDraftAndShowCards()
     })
     currentDraftableCards = [];
     controller.abort();
+    await fetch("/ReceivedDraftFinished",{
+        method: "Post"
+    });
 }
