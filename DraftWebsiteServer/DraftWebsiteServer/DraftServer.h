@@ -3,6 +3,8 @@
 #include "httplib.h"
 #include "Lobby.h"
 #include <chrono>
+#include <guiddef.h>
+
 // dessa beskrivs i cpp filen
 class DraftServer
 {
@@ -12,7 +14,6 @@ private:
     void RemoveInactiveLobbies();
 
     int lobbyId = 0;
-    int playerCookieId = 0;
 
     std::mutex serverMutex = std::mutex();
     httplib::Server svr;

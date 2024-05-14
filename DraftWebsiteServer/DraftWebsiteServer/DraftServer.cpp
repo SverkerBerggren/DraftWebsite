@@ -4,6 +4,8 @@
 #include <chrono>
 #include <condition_variable>
 #include "json.hpp"
+#include <rpc.h>
+#include <rpcdce.h>
 
 using namespace httplib;
 using json = nlohmann::json;
@@ -32,11 +34,29 @@ void DraftServer::Start(const std::string& entryPoint)
         ifStream.seekg(0, ifStream.beg);
         ifStream.read(html.data(), html.size());
         res.set_content(html, "text/html");
+
+
+
+
         if (req.get_header_value("Cookie") == "")
         {
-            res.set_header("Set-Cookie", "PlayerId = " + std::to_string(playerCookieId) + "; Expires=Thu, 25 Apr 2024 07:28:00 GMT;");
+            UUID globalGUID;
+            if (UuidCreate(&globalGUID) == RPC_S_OK)
+            {
+                RPC_CSTR rpcGUID;
+                RPC_STATUS status = UuidToString(&globalGUID, &rpcGUID);
+              
+                if (status == RPC_S_OK)
+                {
+                    std::string stringGUID((char*)rpcGUID);
+                    RpcStringFreeA(&rpcGUID);
+                    res.set_header("Set-Cookie", "PlayerId = " + stringGUID + "; Expires=Thu, 25 Jun 2024 07:28:00 GMT;");
+                }
+            }
+            
+
         }
-        playerCookieId += 1;
+        
         std::cout << "hur manga lobbies " << std::to_string(activeLobbies.size()) << std::endl;
         std::cout << html.size() << std::endl;
         });
