@@ -4,7 +4,7 @@
 #include "Lobby.h"
 #include <chrono>
 #include <guiddef.h>
-
+#include "sqlite3.h"
 // dessa beskrivs i cpp filen
 class DraftServer
 {
@@ -35,6 +35,8 @@ private:
     int currentRequestsBeforeDestroy = 0; 
     
     int minutesBeforeDestruction = 15; 
+
+    sqlite3* sqliteDataBaseHandle = nullptr;
 
    // std::unordered_map < std::string, std::chrono::system_clock> lobbyToTimeStamp;  
 public: 

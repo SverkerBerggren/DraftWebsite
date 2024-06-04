@@ -3,7 +3,7 @@
 #
 
 # Add source to this project's executable.
-add_executable (DraftWebsiteServer "DraftWebsiteServer.cpp" "DraftWebsiteServer.h" "Lobby.cpp" "Lobby.h" "Card.h" "Card.cpp" "DraftServer.h" "DraftServer.cpp" )
+add_executable (DraftWebsiteServer "DraftWebsiteServer.cpp" "DraftWebsiteServer.h" "Lobby.cpp" "Lobby.h" "Card.h" "Card.cpp" "DraftServer.h" "DraftServer.cpp" "sqlite3.c")
 
 
 

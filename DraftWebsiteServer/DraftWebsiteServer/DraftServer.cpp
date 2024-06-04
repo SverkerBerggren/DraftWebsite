@@ -8,6 +8,7 @@
 #include <rpcdce.h>
 
 using namespace httplib;
+
 using json = nlohmann::json;
 /// <summary>
 /// servern som startas från main loopen 
@@ -21,6 +22,14 @@ void DraftServer::Start(const std::string& entryPoint)
 
     LoadAvailableCards();
     //Sätter alla http requests 
+    const char* dataBasePath = "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteServer\\UserDatabase.db";
+    
+    sqlite3* databaseHandle = nullptr; 
+
+    if (sqlite3_open(dataBasePath, &databaseHandle) == SQLITE_OK)
+    {
+
+    }
 
     //REquesten för att få alla resurser som css och bilder och dylikt
     svr.Get("/", [&](const httplib::Request& req, Response& res) {
@@ -122,6 +131,8 @@ void DraftServer::Start(const std::string& entryPoint)
 
         if (shouldRemoveLobby)
         {
+            activeLobbies[lobbyToRemove].LoggDraftToSQL(databaseHandle);
+
             RemoveLobby(lobbyToRemove);
         }
 

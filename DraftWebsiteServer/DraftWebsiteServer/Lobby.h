@@ -5,8 +5,8 @@
 #include <unordered_map>
 #include <map>
 #include <mutex>
-
-
+#include <format>
+#include "sqlite3.h"
 //alla dessa beskrivs i cpp filen 
 class Lobby
 {
@@ -50,6 +50,10 @@ private:
 	void CreatePacks();
 	void UpdateTimeStamp() { std::lock_guard<std::mutex> lockGuard(*lobbyMutex);  timeStampLastAction = std::chrono::system_clock::now(); }
 
+	void LoggPlayerDraft(const std::string& playerId, int draftCount, sqlite3* database);
+
+	bool hasLoggedFinishedDraft = false;
+
 public: 
 
 	Lobby() = default;
@@ -60,7 +64,9 @@ public:
 
 	void StartLobby(const  std::vector<std::string> &availableCards, const std::vector<std::string> &extraDeckcards);
 
-	
+	const bool GetFinishedDraft() { std::lock_guard<std::mutex> lockGuard(*lobbyMutex); return hasLoggedFinishedDraft; };
+
+	void LoggDraftToSQL(sqlite3* database);
 
 	void AddConnectedPlayer(const std::string &playerId);
 

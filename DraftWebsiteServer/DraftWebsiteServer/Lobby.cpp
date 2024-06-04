@@ -234,6 +234,90 @@ const std::vector<std::string> Lobby::GetConnectedPlayers()
 
 	return messageToReturn;
 }
+void Lobby::LoggDraftToSQL(sqlite3* database)
+{
+	
+	std::lock_guard<std::mutex> lockGuard(*lobbyMutex);
+
+
+
+	if (hasLoggedFinishedDraft)
+	{
+		return;
+	}
+	hasLoggedFinishedDraft = true;
+
+	for (std::string playerId : connectedPlayers)
+	{	
+		int playerDraftcount = 0; 
+		std::string playerDraftCountQuery = "SELECT MAX(draftCount) FROM PlayerDrafts WHERE playerID = ?1;";
+		sqlite3_stmt* playerDraftCountStatement = nullptr;
+		
+		const char* tailPointer = nullptr;
+		sqlite3_prepare_v2(database,playerDraftCountQuery.data(), playerDraftCountQuery.size(), &playerDraftCountStatement, &tailPointer);
+		sqlite3_bind_text(playerDraftCountStatement, 1, playerId.data(), playerId.size(), SQLITE_TRANSIENT);
+		
+		if (sqlite3_step(playerDraftCountStatement) == SQLITE_ROW)
+		{
+			playerDraftcount = sqlite3_column_int(playerDraftCountStatement, 0) +1;
+			char* pointer = (char*)sqlite3_column_text(playerDraftCountStatement, 1);
+			if (pointer != nullptr)
+			{
+				std::string debug(pointer);
+			}
+		}
+		sqlite3_reset(playerDraftCountStatement);
+		sqlite3_finalize(playerDraftCountStatement);
+		LoggPlayerDraft(playerId, playerDraftcount, database);
+	}
+
+}
+
+void Lobby::LoggPlayerDraft(const std::string& playerId, int draftCount, sqlite3* database)
+{	
+	//std::string date = std::format("{0:%F %R %Z}", timeStampLastAction);
+	std::string date = "placeholder";
+	
+	std::string playerDraftInsert = "INSERT INTO PlayerDrafts VALUES( ?1,?2,?3);";
+	
+	sqlite3_stmt* playerDraftstatement = nullptr;
+	const char* tailPointer = nullptr;
+	sqlite3_prepare_v2(database, playerDraftInsert.data(), playerDraftInsert.size(), &playerDraftstatement, &tailPointer);
+
+	sqlite3_bind_int(playerDraftstatement,3,draftCount);
+	sqlite3_bind_text(playerDraftstatement, 1, date.data(), date.size(), SQLITE_TRANSIENT);
+	sqlite3_bind_text(playerDraftstatement, 2, playerId.data(), playerId.size(), SQLITE_TRANSIENT);
+
+	sqlite3_step(playerDraftstatement);
+
+	sqlite3_reset(playerDraftstatement);
+	sqlite3_finalize(playerDraftstatement);
+
+
+	//bygger på att det bara finns 1 kopia av varje kort 
+	for (std::string cardDrafted : pickedCards[playerId])
+	{
+		std::string cardsInDraftInsert = "INSERT INTO CardsInDraft VALUES( ?1,?2,?3,?4);";
+
+		sqlite3_stmt* cardsInDraftStatement = nullptr;
+		const char* tailPointer = nullptr;
+		sqlite3_prepare_v2(database, cardsInDraftInsert.data(), cardsInDraftInsert.size(), &cardsInDraftStatement, &tailPointer);
+
+		sqlite3_bind_text(cardsInDraftStatement, 1, playerId.data(), playerId.size(), SQLITE_TRANSIENT);
+		sqlite3_bind_int(cardsInDraftStatement, 2, draftCount);
+		sqlite3_bind_text(cardsInDraftStatement, 3, cardDrafted.data(), cardDrafted.size(), SQLITE_TRANSIENT);
+		sqlite3_bind_int(cardsInDraftStatement, 4, 1);
+
+		int message = sqlite3_step(cardsInDraftStatement);
+
+		
+
+		sqlite3_reset(cardsInDraftStatement);
+		sqlite3_finalize(cardsInDraftStatement);
+
+	}
+
+}
 
 void Lobby::UpdatePlayerSeenLobbyEnded(const std::string& playerId)
 {
