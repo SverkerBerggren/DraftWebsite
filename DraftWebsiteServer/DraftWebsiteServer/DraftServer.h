@@ -6,6 +6,20 @@
 #include <guiddef.h>
 #include "sqlite3.h"
 #include "httplib.h"
+
+#include <random>
+class MTGPackGenerator {
+    //mega hack
+    std::shared_ptr<std::random_device> m_RNG = std::make_shared<std::random_device>();
+
+    std::unordered_map<std::string, std::vector<std::string>> m_Rarities;
+    std::vector<std::string> m_TotalCards;
+    bool m_UsePacks = false;
+public:
+    MTGPackGenerator(std::filesystem::path const& ImageFolder,bool UsePacks);
+    std::vector<std::string> operator()();
+};
+
 // dessa beskrivs i cpp filen
 using namespace httplib;
 
@@ -32,6 +46,11 @@ private:
     std::vector<std::string> availableMainDeckCards;
     std::vector<std::string> availableExtraCards;
     std::string pointOfEntry;
+
+    void RemoveLobby(const std::string& lobbyId);
+
+    std::string HostLobby(const std::string& playerId, int mainDeckCardsPerPack,int extraDeckCardsPerPack,int amountOfPacks,PackFunc Func);
+
     int maxRequestsBeforeLobbyDestroy = 45;
     int currentRequestsBeforeDestroy = 0; 
     int minutesBeforeDestruction = 15;
@@ -41,5 +60,5 @@ private:
 public: 
 
 
-    void Start(const std::string& entryPoint);
+    void Start(const std::string& entryPoint,std::vector<std::string> argv);
 };

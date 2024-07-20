@@ -12,17 +12,19 @@ using namespace httplib;
 int main(int argc, char* argv[])
 {
 	DraftServer draftServer;
+	std::vector<std::string> ConvertedArgv;
+	for (int i = 1; i < argc; i++)
+	{
+		ConvertedArgv.push_back(argv[i]);
+	}
 	if (argc == 1)
 	{
-		draftServer.Start("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML");
+		
+		draftServer.Start("D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteHTML",ConvertedArgv);
 	}
 	else
 	{	
-		if (argc == 2)
-		{
-			draftServer.Start( std::string(argv[1]));
-
-		}
+		draftServer.Start( std::string(argv[1]),ConvertedArgv);
 	}
 
 	return 0;

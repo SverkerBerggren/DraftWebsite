@@ -1,9 +1,9 @@
 #include "Lobby.h"
 #include <algorithm>
 #include <random>
-//Lobby är objektet för de lobbies av spelare som skapas
+//Lobby ï¿½r objektet fï¿½r de lobbies av spelare som skapas
 
-//När en spelare vill välja att ta ett kort. Man kan inte ta ett nytt kort förrän alla andra har tagit 
+//Nï¿½r en spelare vill vï¿½lja att ta ett kort. Man kan inte ta ett nytt kort fï¿½rrï¿½n alla andra har tagit 
 void Lobby::PickCard(const std::string &playerId, int index)
 {	
 	UpdateTimeStamp();
@@ -45,7 +45,7 @@ void Lobby::PickCard(const std::string &playerId, int index)
 		RotatePacks(rotatePack);
 	}
 }
-//När alla spelare har tagit 1 kort så startas en ny omgång där packen roterar.
+//Nï¿½r alla spelare har tagit 1 kort sï¿½ startas en ny omgï¿½ng dï¿½r packen roterar.
 void Lobby::RotatePacks(bool allPlayersHavePicked)
 {
 	UpdateTimeStamp();
@@ -77,14 +77,14 @@ void Lobby::RotatePacks(bool allPlayersHavePicked)
 	}
 }
 
-//oanvänd metod
+//oanvï¿½nd metod
 const bool Lobby::IsDraftFinished()
 {
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
 	return draftFinished;
 }
 
-//När en ny spelare vill joina lobbyn 
+//Nï¿½r en ny spelare vill joina lobbyn 
 void Lobby::AddConnectedPlayer(const std::string &playerId)
 {
 	UpdateTimeStamp();
@@ -97,7 +97,7 @@ void Lobby::AddConnectedPlayer(const std::string &playerId)
 	}
 }
 
-//När man vill få de kortet man har tillgänglighet för att drafta 
+//Nï¿½r man vill fï¿½ de kortet man har tillgï¿½nglighet fï¿½r att drafta 
 const std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string& playerId)
 {
 	UpdateTimeStamp();
@@ -118,7 +118,7 @@ const std::vector<std::string> Lobby::GetDraftableCardsPlayer(const std::string&
 }
 
 
-//När man vill få kortet man redan har tagit
+//Nï¿½r man vill fï¿½ kortet man redan har tagit
 const std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 {
 	UpdateTimeStamp();
@@ -138,7 +138,7 @@ const std::string Lobby::GetPickedCardsPlayer(const std::string& playerId)
 	return stringToReturn;
 }
 
-//frågar om en spelare redan är med i lobbyn. 
+//frï¿½gar om en spelare redan ï¿½r med i lobbyn. 
 const bool Lobby::IsPlayerConnected(const std::string& playerId)
 {	
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
@@ -150,59 +150,58 @@ const bool Lobby::IsPlayerConnected(const std::string& playerId)
 	return false;
 }
 
-//Skapar packsen. Är utifrån en finit lista som är slumpad
+//Skapar packsen. ï¿½r utifrï¿½n en finit lista som ï¿½r slumpad
 void Lobby::CreatePacks()
 {	
-
 	std::lock_guard<std::mutex> lockGuard = std::lock_guard<std::mutex>(*lobbyMutex);
-
-
 	if (packsCreated == amountOfPacks)
 	{
 		draftFinished = true;
 		return;
 	}
-
-	std::vector<std::string>* listToUse; 
-	int amountToUse = 0; 
-	if (useExtraDeck)
+	if (!m_PackCreationFunc)
 	{
-		if (shouldCreateExtraDeckPack)
+		std::vector<std::string>* listToUse;
+		int amountToUse = 0;
+		if (useExtraDeck)
 		{
-			listToUse = &shuffledExtraDeckCards;
-			amountToUse = extraDeckCardsPerPack;
-			shouldCreateExtraDeckPack = false;
+			if (shouldCreateExtraDeckPack)
+			{
+				listToUse = &shuffledExtraDeckCards;
+				amountToUse = extraDeckCardsPerPack;
+				shouldCreateExtraDeckPack = false;
+			}
+			else
+			{
+				listToUse = &shuffledMainDeckCards;
+				amountToUse = mainDeckCardsPerPack;
+				shouldCreateExtraDeckPack = true;
+			}
 		}
 		else
 		{
 			listToUse = &shuffledMainDeckCards;
 			amountToUse = mainDeckCardsPerPack;
-			shouldCreateExtraDeckPack = true;
 		}
-	}
-	else
-	{
-		listToUse = &shuffledMainDeckCards;
-		amountToUse = mainDeckCardsPerPack;
-	}
-	for (int i = 0; i < connectedPlayers.size(); i++)
-	{	
-		
-
-
-		//playerPacks[connectedPlayers[i]];
-
-		for (int z = 0; z < amountToUse; z++)
+		for (int i = 0; i < connectedPlayers.size(); i++)
 		{
-			playerPacks[connectedPlayers[i]].push_back(listToUse->back());
-			listToUse->pop_back();
+			//playerPacks[connectedPlayers[i]];
+			for (int z = 0; z < amountToUse; z++)
+			{
+				playerPacks[connectedPlayers[i]].push_back(listToUse->back());
+				listToUse->pop_back();
+			}
 		}
-
+	}
+	else {
+		for (int i = 0; i < connectedPlayers.size(); i++) {
+			playerPacks[connectedPlayers[i]] = m_PackCreationFunc();
+		}
 	}
 	packsCreated += 1;
 }
 
-//Frågar om lobbyn har startat
+//Frï¿½gar om lobbyn har startat
 const bool Lobby::HasLobbyStarted()
 {
 	UpdateTimeStamp();
@@ -219,7 +218,7 @@ const std::string& Lobby::GetHost()
 
 	return host;
 }
-//får en lista av alla connectade spelare
+//fï¿½r en lista av alla connectade spelare
 const std::vector<std::string> Lobby::GetConnectedPlayers()
 {
 	UpdateTimeStamp();
@@ -294,7 +293,7 @@ void Lobby::LoggPlayerDraft(const std::string& playerId, int draftCount, sqlite3
 	sqlite3_finalize(playerDraftstatement);
 
 
-	//bygger på att det bara finns 1 kopia av varje kort 
+	//bygger pï¿½ att det bara finns 1 kopia av varje kort 
 	for (std::string cardDrafted : pickedCards[playerId])
 	{
 		std::string cardsInDraftInsert = "INSERT INTO CardsInDraft VALUES( ?1,?2,?3,?4);";
@@ -333,7 +332,7 @@ void Lobby::UpdatePlayerSeenLobbyEnded(const std::string& playerId)
 	//}
 }
 
-//Startar en lobby. När en lobby är startad kan man inte längre gå med i den. 
+//Startar en lobby. Nï¿½r en lobby ï¿½r startad kan man inte lï¿½ngre gï¿½ med i den. 
 void Lobby::StartLobby(const std::vector<std::string> &availableCards, const std::vector<std::string> &extraDeckCards) 
 {
 	UpdateTimeStamp();
@@ -354,9 +353,13 @@ void Lobby::StartLobby(const std::vector<std::string> &availableCards, const std
 
 			for (int i = 0; i < extraCards; i++)
 			{
-				shuffledMainDeckCards.push_back(shuffledMainDeckCards[0]);
-
-				
+				if (shuffledExtraDeckCards.size() != 0)
+				{
+					shuffledMainDeckCards.push_back(shuffledMainDeckCards[0]);
+				}
+				else {
+					shuffledMainDeckCards.push_back("");
+				}
 			}
 		}
 		shuffledExtraDeckCards = extraDeckCards;
@@ -369,9 +372,13 @@ void Lobby::StartLobby(const std::vector<std::string> &availableCards, const std
 
 			for (int i = 0; i < extraCards; i++)
 			{
-				shuffledExtraDeckCards.push_back(shuffledExtraDeckCards[0]);
-
-
+				if(shuffledExtraDeckCards.size() != 0)
+				{
+					shuffledExtraDeckCards.push_back(shuffledExtraDeckCards[0]);
+				}
+				else {
+					shuffledExtraDeckCards.push_back("");
+				}
 			}
 		}
 		if (useExtraDeck)
