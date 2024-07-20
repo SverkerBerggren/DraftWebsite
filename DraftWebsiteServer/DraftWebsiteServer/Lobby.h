@@ -43,7 +43,7 @@ private:
 
 	std::string host; 
 
-	bool useExtraDeck = true; 
+	bool useExtraDeck = false; 
 	bool shouldCreateExtraDeckPack = false; 
 	
 	bool lobbyHasEnded = false;

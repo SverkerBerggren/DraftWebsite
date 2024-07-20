@@ -44,7 +44,7 @@ startLobbyButton.onclick = StartLobby;
 
 UpdateJoinedPlayers();
 UpdateLobbyStarted();
-UpdateDraftableCardsLoop();
+//UpdateDraftableCardsLoop();
 
 async function HostLobby()
 {
@@ -206,6 +206,9 @@ async function UpdateLobbyStarted()
                 {
                     UpdateDraftableCardsLoop();
                     continueHasLobbyStarted = false;
+                    playersJoinedArea.hidden = true;
+                    lobbyIdText.hidden = true;
+                    startLobbyButton.hidden = true;
                 }
               });
 
@@ -507,32 +510,16 @@ async function FinishDraftAndShowCards()
     cardsDrafted += "#main" + "\n";
     arrayToLoop = TrimCardArray(draftedCards,"uncommon/");
 
-    for(i = 0; i <arrayToLoop.length ; i++)
+    for(i = 0; i< draftedCards.length;i++)
     {   
-        
-        cardsDrafted += arrayToLoop[i] + "\n";
+        removedJPG = draftedCards[i].split(".");
+        removedPath = removedJPG[0].split("/");
+     //   removeComma = removedPath.slice(0,1);
+        cardsDrafted +=  removedPath[1];
+        cardsDrafted += "\n"
     }
-    arrayToLoop = TrimCardArray(draftedCards,"common/");
 
-    for(i = 0; i <arrayToLoop.length ; i++)
-    {   
-        
-        cardsDrafted += arrayToLoop[i] + "\n";
-    }
-    arrayToLoop = TrimCardArray(draftedCards,"rare/");
 
-    for(i = 0; i <arrayToLoop.length ; i++)
-    {   
-        
-        cardsDrafted += arrayToLoop[i] + "\n";
-    }
-    arrayToLoop = TrimCardArray(draftedCards,"mythic/");
-
-    for(i = 0; i <arrayToLoop.length ; i++)
-    {   
-        
-        cardsDrafted += arrayToLoop[i] + "\n";
-    }
     arrayToLoop = TrimCardArray(draftedCards,"MainDeck/");
 
     for(i = 0; i <arrayToLoop.length ; i++)
