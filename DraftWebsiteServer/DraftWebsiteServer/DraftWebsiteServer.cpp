@@ -13,6 +13,8 @@ int main(int argc, char* argv[])
 {
 	DraftServer draftServer;
 	std::vector<std::string> ConvertedArgv;
+	ConvertedArgv.push_back("--mtg");
+	ConvertedArgv.push_back("--packs");
 	for (int i = 1; i < argc; i++)
 	{
 		ConvertedArgv.push_back(argv[i]);

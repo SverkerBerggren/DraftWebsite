@@ -299,7 +299,8 @@ void DraftServer::Start(const std::string& entryPoint,std::vector<std::string> a
             if (shouldHostLobby && parsingSuccessful)
             {   
                 message["Accepted"] = true; 
-                message["LobbyId"] = HostLobby(playerId,cardPerMainDeckPack,cardPerExtraDeckPack,amountOfPacks,PackCreationFunc);
+                message["RefLink"] = "/DraftLobby?LobbyId=" + HostLobby(playerId, cardPerMainDeckPack, cardPerExtraDeckPack, amountOfPacks,PackCreationFunc);
+
                 res.set_content(message.dump(), "text/plain");
             }
             else
@@ -412,12 +413,12 @@ std::string DraftServer::HostLobby(const std::string& playerId, int mainDeckCard
 {   
 
     std::lock_guard<std::mutex> lockGuard(serverMutex);
-     
-    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId,mainDeckCardsPerPack, amountOfPacks,true,extraDeckCardsPerPack,std::move(Func));
+    std::string lobbyId = GetUniqueLobbyURL();
+    activeLobbies[lobbyId] = Lobby(playerId, mainDeckCardsPerPack, amountOfPacks, true, extraDeckCardsPerPack, std::move(Func));
 //    activeLobbies[std::to_string(lobbyId)].StartLobby(availableMainDeckCards);
-    playerToLobby[playerId] = uniqueLobbyId;
+    playerToLobby[playerId] = lobbyId;
 
-    return uniqueLobbyId;
+    return lobbyId;
 }
 
 std::string DraftServer::GetUniqueLobbyURL()

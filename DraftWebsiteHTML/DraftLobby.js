@@ -505,6 +505,34 @@ async function FinishDraftAndShowCards()
        
     }
     cardsDrafted += "#main" + "\n";
+    arrayToLoop = TrimCardArray(draftedCards,"uncommon/");
+
+    for(i = 0; i <arrayToLoop.length ; i++)
+    {   
+        
+        cardsDrafted += arrayToLoop[i] + "\n";
+    }
+    arrayToLoop = TrimCardArray(draftedCards,"common/");
+
+    for(i = 0; i <arrayToLoop.length ; i++)
+    {   
+        
+        cardsDrafted += arrayToLoop[i] + "\n";
+    }
+    arrayToLoop = TrimCardArray(draftedCards,"rare/");
+
+    for(i = 0; i <arrayToLoop.length ; i++)
+    {   
+        
+        cardsDrafted += arrayToLoop[i] + "\n";
+    }
+    arrayToLoop = TrimCardArray(draftedCards,"mythic/");
+
+    for(i = 0; i <arrayToLoop.length ; i++)
+    {   
+        
+        cardsDrafted += arrayToLoop[i] + "\n";
+    }
     arrayToLoop = TrimCardArray(draftedCards,"MainDeck/");
 
     for(i = 0; i <arrayToLoop.length ; i++)

@@ -1,5 +1,6 @@
 DraftWebsiteServer/out/*
 DraftWebsiteServer/.vs/*
+DraftWebsiteHTML/CardImages/*
 DraftWebsiteHTML/CardImages/ExtraDeck/*
 DraftWebsiteHTML/CardImages/MainDeck/*
 *.db

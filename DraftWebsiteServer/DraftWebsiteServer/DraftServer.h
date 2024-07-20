@@ -47,7 +47,6 @@ private:
     std::vector<std::string> availableExtraCards;
     std::string pointOfEntry;
 
-    void RemoveLobby(const std::string& lobbyId);
 
     std::string HostLobby(const std::string& playerId, int mainDeckCardsPerPack,int extraDeckCardsPerPack,int amountOfPacks,PackFunc Func);
 
