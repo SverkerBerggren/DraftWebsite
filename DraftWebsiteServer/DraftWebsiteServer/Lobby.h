@@ -12,7 +12,8 @@ class Lobby
 {
 
 private: 
-	std::string lobbyId;
+	//std::string lobbyId;
+
 
 	std::vector<std::string> connectedPlayers;
 

@@ -8,27 +8,15 @@ let cardHighlight = document.getElementById("HighLightCard");
 
 let downloadButton = document.getElementById("Downloadbutton");
 
-let hostButton = document.getElementById("HostButton");
 let startButton = document.getElementById("StartButton");
 
-let startForm = document.getElementById("StartForm");
-
-let joinButton = document.getElementById("JoinButton");
-let joinInput = document.getElementById("InputFieldJoin");
-
 let lobbyIdText = document.getElementById("lobbyIdText");
-
-let inputCardsPerPack = document.getElementById("InputFieldCardPerPack");
-let inputAmountOfPacks = document.getElementById("InputFieldAmountOfPack");
-let inputAmountOfExtraDeckCards = document.getElementById("InputFieldAmountOfPlayers");
 
 let playersJoinedArea = document.getElementById("PlayersJoined");
 
 let startLobbyButton = document.getElementById("startLobbyButton");
 
 HideHighlightCard();
-
-joinButton.onclick = JoinLobby;
 
 let joinedLobbyId ="";
 
@@ -48,19 +36,15 @@ let continuePlayerUpdate = true;
 //AddAvailableCards();
 
 let currentDraftableCards = [];
-hostButton.onclick = HostLobby;
 
-
-//ShowPack(simulatedPacks[0]);
-
-//HostLobby();
 
 continueHasLobbyStarted = true;
-//downloadButton.hidden = true;
 
 startLobbyButton.onclick = StartLobby;
 
-
+UpdateJoinedPlayers();
+UpdateLobbyStarted();
+UpdateDraftableCardsLoop();
 
 async function HostLobby()
 {
@@ -80,19 +64,18 @@ async function HostLobby()
         
         if(json["Accepted"])
         {
-          //  hostedLobbyId = json["LobbyId"];
-         //   lobbyIdText.textContent = "Lobby id: " + json["LobbyId"];
+            hostedLobbyId = json["LobbyId"];
+            lobbyIdText.textContent = "Lobby id: " + json["LobbyId"];
         }
-        window.location.href =  json["RefLink"];
 
        // console.log(json);
     });
 
 
 
-    //UpdateJoinedPlayers();
+    UpdateJoinedPlayers();
 
-   // UpdateDraftableCardsLoop();
+    UpdateDraftableCardsLoop();
 }
 
 async function JoinLobby()
@@ -133,6 +116,11 @@ async function UpdateDraftableCardsLoop()
 {
     while(continueDraftableCardsLoop)
     {
+
+        if(document.cookie == "")
+        {
+            continue;
+        }
         shouldEndDraft = false;
         response = await fetch("/Update",{
             method: "Post",
@@ -168,6 +156,11 @@ async function UpdateJoinedPlayers()
 {
     while(continuePlayerUpdate)
     {
+        if(document.cookie == "")
+        {
+            continue;
+        }
+        
         response = await fetch("/Update",{
             method: "Post",
             signal: AbortSignal.timeout(15000),
@@ -185,6 +178,11 @@ async function UpdateJoinedPlayers()
                     playersJoinedArea.append(paragraph);
                 }
                 console.log(message);
+                if(json["IsHost"])
+                {
+                    startLobbyButton.hidden = false;
+                }
+                lobbyIdText.textContent = json["InviteLink"];
               });
 
         await sleep(3000);
@@ -194,6 +192,10 @@ async function UpdateLobbyStarted()
 {
     while(continueHasLobbyStarted)
     {
+        if(document.cookie == "")
+        {
+            continue;
+        }
         response = await fetch("/Update",{
             method: "Post",
             signal: AbortSignal.timeout(15000),
@@ -407,6 +409,7 @@ function AddCardToDraftPile(cardName)
 
 async function UpdateDraftedCards()
 {
+
     response = await fetch("/PickedCards",{
             method: "Get"
             }).then((response) => response.text()).then((text) => {

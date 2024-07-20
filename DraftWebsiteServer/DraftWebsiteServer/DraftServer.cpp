@@ -35,39 +35,57 @@ void DraftServer::Start(const std::string& entryPoint)
     svr.Get("/", [&](const httplib::Request& req, Response& res) {
         std::cout << "hej getta html" << std::endl;
         std::cout << " Cookie " << req.get_header_value("Cookie") << std::endl;
-        std::string tempString = pointOfEntry;
-        std::ifstream ifStream = std::ifstream(tempString.append("\\placeholder.html"));
-
-        ifStream.seekg(0, ifStream.end);
-        std::string html = std::string(ifStream.tellg(), 0);
-        ifStream.seekg(0, ifStream.beg);
-        ifStream.read(html.data(), html.size());
-        res.set_content(html, "text/html");
-
-
-
-
-        if (req.get_header_value("Cookie") == "")
+        GiveCookie(req, res);
+        ServeHTML(req, res, "RootSite.html");
+        std::cout << "hur manga lobbies " << std::to_string(activeLobbies.size()) << std::endl;
+       // std::cout << html.size() << std::endl;
+        });
+    svr.Get("/DraftLobby", [&](const httplib::Request& req, Response& res) {
+        GiveCookie(req,res);
+        //ServeHTML(req, res,"DraftLobby.html");
+        std::string playerId = req.get_header_value("Cookie");
+        json message;
+        if (!req.has_param("LobbyId"))
         {
-            UUID globalGUID;
-            if (UuidCreate(&globalGUID) == RPC_S_OK)
+            res.set_content("knas", "text/plain");
+            return; 
+        }
+
+        std::string lobbyId = req.get_param_value("LobbyId");
+
+        std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
+        {
+            auto iterator = activeLobbies.find(lobbyId);
+
+            if (iterator != activeLobbies.end())
             {
-                RPC_CSTR rpcGUID;
-                RPC_STATUS status = UuidToString(&globalGUID, &rpcGUID);
-              
-                if (status == RPC_S_OK)
+                if (iterator->second.IsPlayerConnected(playerId))
                 {
-                    std::string stringGUID((char*)rpcGUID);
-                    RpcStringFreeA(&rpcGUID);
-                    res.set_header("Set-Cookie", "PlayerId = " + stringGUID + "; Expires=Thu, 25 Jun 2024 07:28:00 GMT;");
+                    //res.set_content("Already connected", "text/plain");
+                    ServeHTML(req, res, "DraftLobby.html");
+
+                }
+                else
+                {
+                    if (iterator->second.HasLobbyStarted())
+                    {
+                        ServeHTML(req, res, "DraftLobby.html");
+
+                    }
+                    else
+                    {
+                        playerToLobby[playerId] = lobbyId;
+                        iterator->second.AddConnectedPlayer(playerId);
+                        //res.set_content("Accepted", "text/plain");
+                        ServeHTML(req, res, "DraftLobby.html");
+                    }
                 }
             }
-            
-
+            else
+            {
+                res.set_content("knas", "text/plain");
+            }
         }
-        
-        std::cout << "hur manga lobbies " << std::to_string(activeLobbies.size()) << std::endl;
-        std::cout << html.size() << std::endl;
         });
 
 
@@ -94,6 +112,8 @@ void DraftServer::Start(const std::string& entryPoint)
                 else if (updateType._Equal("ConnectedPlayers"))
                 {
                     message["ConnectedPlayers"] = activeLobbies[iterator->second].GetConnectedPlayers();
+                    message["IsHost"] = activeLobbies[iterator->second].GetHost() == playerId;
+                    message["InviteLink"] = "http://sus.dorctown.com:1234/DraftLobby?LobbyId=" + iterator->second;
                 }
                 else if (updateType._Equal("HasLobbyStarted"))
                 {
@@ -190,12 +210,19 @@ void DraftServer::Start(const std::string& entryPoint)
                 {
                     shouldHostLobby = true;
                 }
+                else
+                {
+                    message["Accepted"] = true;
+                    message["RefLink"] = "/DraftLobby?LobbyId=" + iterator->second;
+                    res.set_content(message.dump(), "text/plain");
+                    return;
+                }
 
             }
             if (shouldHostLobby && parsingSuccessful)
             {   
                 message["Accepted"] = true; 
-                message["LobbyId"] = HostLobby(playerId,cardPerMainDeckPack,cardPerExtraDeckPack,amountOfPacks);
+                message["RefLink"] = "/DraftLobby?LobbyId=" + HostLobby(playerId, cardPerMainDeckPack, cardPerExtraDeckPack, amountOfPacks);
                 res.set_content(message.dump(), "text/plain");
             }
             else
@@ -243,42 +270,7 @@ void DraftServer::Start(const std::string& entryPoint)
     //Requesten som behandlar när en spelare vill gå med en lobby. Man kan bara vara med i en lobby samtidigt
 
     svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {    
-        std::string playerId = req.get_header_value("Cookie");
-        std::string lobbyId = req.body;
-
-
-        std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
-        {
-            auto iterator = activeLobbies.find(lobbyId);
-
-            if (iterator != activeLobbies.end())
-            {
-                if (!iterator->second.HasLobbyStarted())
-                {   
-                    if (iterator->second.IsPlayerConnected(playerId))
-                    {
-                        res.set_content("Already connected", "text/plain");
-
-                    }
-                    else
-                    {
-                        playerToLobby[playerId] = req.body;
-                        iterator->second.AddConnectedPlayer(playerId);
-                        res.set_content("Accepted", "text/plain");
-                        
-                    }
-
-                }
-                else
-                {
-                    res.set_content("nej", "text/plain");
-                }
-            }
-            else
-            {
-                res.set_content("nej", "text/plain");
-            }
-        }
+            JoinLobby(req, res);
     //    std::cout << "join grejen " <<playerId  << std::endl;
         });
 
@@ -343,13 +335,31 @@ std::string DraftServer::HostLobby(const std::string& playerId, int mainDeckCard
 {   
 
     std::lock_guard<std::mutex> lockGuard(serverMutex);
-     
-    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId,mainDeckCardsPerPack, amountOfPacks,true,extraDeckCardsPerPack);
+    std::string uniqueLobbyId = std::move(GetUniqueLobbyURL());
+    activeLobbies[uniqueLobbyId] = Lobby(playerId, mainDeckCardsPerPack, amountOfPacks, true, extraDeckCardsPerPack);
 //    activeLobbies[std::to_string(lobbyId)].StartLobby(availableMainDeckCards);
-    playerToLobby[playerId] =  std::to_string(lobbyId);
-    lobbyId += 1;
-    std::string stringToReturn = std::to_string(lobbyId -1);
-    return stringToReturn;
+    playerToLobby[playerId] = uniqueLobbyId;
+
+    return uniqueLobbyId;
+}
+
+std::string DraftServer::GetUniqueLobbyURL()
+{
+    UUID globalGUID;
+    if (UuidCreate(&globalGUID) == RPC_S_OK)
+    {
+        RPC_CSTR rpcGUID;
+        RPC_STATUS status = UuidToString(&globalGUID, &rpcGUID);
+
+        if (status == RPC_S_OK)
+        {
+            std::string stringGUID((char*)rpcGUID);
+            RpcStringFreeA(&rpcGUID);
+            return stringGUID;
+          //  res.set_header("Set-Cookie", "PlayerId = " + stringGUID + "; Expires=Thu, 25 Jun 2024 07:28:00 GMT;");
+        }
+    }
+    return "det sket sig";
 }
 void DraftServer::RemoveInactiveLobbies()
 {
@@ -400,4 +410,76 @@ void DraftServer::RemoveLobby(const std::string& lobbyId)
         playerToLobby.erase(playerToRemove);
     }
 
+}
+
+void DraftServer::JoinLobby(const Request& req, Response& res)
+{
+    std::string playerId = req.get_header_value("Cookie");
+    std::string lobbyId = req.body;
+     
+
+    std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
+    {
+        auto iterator = activeLobbies.find(lobbyId);
+
+        if (iterator != activeLobbies.end())
+        {
+            if (!iterator->second.HasLobbyStarted())
+            {
+                if (iterator->second.IsPlayerConnected(playerId))
+                {
+                    res.set_content("Already connected", "text/plain");
+
+                }
+                else
+                {
+                    playerToLobby[playerId] = req.body;
+                    iterator->second.AddConnectedPlayer(playerId);
+                    res.set_content("Accepted", "text/plain");
+
+                }
+
+            }
+            else
+            {
+                res.set_content("nej", "text/plain");
+            }
+        }
+        else
+        {
+            res.set_content("nej", "text/plain");
+        }
+    }
+}
+
+void DraftServer::GiveCookie(const Request& req, Response& res)
+{
+
+    if (req.get_header_value("Cookie") == "")
+    {
+        UUID globalGUID;
+        if (UuidCreate(&globalGUID) == RPC_S_OK)
+        {
+            RPC_CSTR rpcGUID;
+            RPC_STATUS status = UuidToString(&globalGUID, &rpcGUID);
+
+            if (status == RPC_S_OK)
+            {
+                std::string stringGUID((char*)rpcGUID);
+                RpcStringFreeA(&rpcGUID);
+                res.set_header("Set-Cookie", "PlayerId = " + stringGUID + "; Expires=Thu, 25 Okt 2024 07:28:00 GMT;SameSite=None");
+            }
+        }
+    }
+}
+void DraftServer::ServeHTML(const Request& req, Response& res, const std::string& htmlPath )
+{
+    std::string tempString = pointOfEntry;
+    std::ifstream ifStream;
+    ifStream = std::ifstream(tempString.append("\\" + htmlPath));
+    ifStream.seekg(0, ifStream.end);
+    std::string html = std::string(ifStream.tellg(), 0);
+    ifStream.seekg(0, ifStream.beg);
+    ifStream.read(html.data(), html.size());
+    res.set_content(html, "text/html");
 }

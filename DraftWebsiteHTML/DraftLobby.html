@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="StyleSheet.css">
     <title>Document</title>
-    
     <script id="jquery" src="jquery-3.6.3.js"></script>
 </head>
 <body>
@@ -14,7 +13,7 @@
         <p>Drafting</p>
     </header>
     <main>
-        <form  id="StartForm" >
+        <form  id="StartForm" hidden ="true" >
             <fieldset>
 
                 <legend>Select parameters for draft</legend>
@@ -42,7 +41,7 @@
         </form>
         <div id = "downloadButtonDiv" >
             <button id="startLobbyButton" type="button" hidden = "true">Start lobby</button>
-            <p id = "lobbyIdText"> Lobby id: - </p>
+            <p id = "lobbyIdText"> Lobby Invite link: - </p>
         </div>
 
         <article id ="PlayersJoined">
@@ -57,9 +56,9 @@
 
     
 
-    <div id = "downloadButtonDiv">
+    <div id = "downloadButtonDiv" >
         
-        <button id="Downloadbutton">Donwload deck</button>
+        <button hidden = "true" id="Downloadbutton">Donwload deck</button>
     </div>
 
     <footer id = "DraftedCardContainer" class="DraftedCardContainer"> 
@@ -73,6 +72,6 @@
 </body>
 <img id="HighLightCard" src="">
 <script>src ="jquery-3.6.3.js"</script>
-<script  src="Script.js"></script>
+<script  src="DraftLobby.js"></script>
 
 </html>
