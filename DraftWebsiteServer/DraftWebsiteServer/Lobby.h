@@ -7,7 +7,11 @@
 #include <mutex>
 #include <format>
 #include "sqlite3.h"
+#include <functional>
 //alla dessa beskrivs i cpp filen 
+
+
+typedef std::function<std::vector<std::string>()> PackFunc;
 class Lobby
 {
 
@@ -46,6 +50,8 @@ private:
 	std::chrono::system_clock::time_point timeStampLastAction;
 
 	void RotatePacks(bool allPlayersHavePicked);
+
+	PackFunc m_PackCreationFunc;
 
 	void CreatePacks();
 	void UpdateTimeStamp() { std::lock_guard<std::mutex> lockGuard(*lobbyMutex);  timeStampLastAction = std::chrono::system_clock::now(); }
@@ -87,13 +93,14 @@ public:
 
 	void UpdatePlayerSeenLobbyEnded(const std::string&	playerId);
 
-	Lobby(const std::string &firstPlayer ,int mainDeckCardsPerPack, int amountOfPacks, bool useExtraDeck, int extraDeckCardsPerPack)
+	Lobby(const std::string& firstPlayer, int mainDeckCardsPerPack, int amountOfPacks, bool useExtraDeck, int extraDeckCardsPerPack,  PackFunc Func)
 	{
 		connectedPlayers.push_back(firstPlayer);
 		host = firstPlayer;
 		this->mainDeckCardsPerPack = mainDeckCardsPerPack;
 		this->amountOfPacks = amountOfPacks;
 		timeStampLastAction = std::chrono::system_clock::now();
+		m_PackCreationFunc = std::move(Func);
 		this->extraDeckCardsPerPack = extraDeckCardsPerPack;
 		
 	}

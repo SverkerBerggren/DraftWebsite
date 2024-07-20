@@ -9,19 +9,95 @@
 
 using namespace httplib;
 
+
+MTGPackGenerator::MTGPackGenerator(std::filesystem::path const& ImageFolder, bool UsePacks)
+{
+    std::filesystem::path CardImageFolder = ImageFolder / "CardImages";
+    std::filesystem::recursive_directory_iterator Iterator(CardImageFolder);
+    m_UsePacks = UsePacks;
+    for (auto& Entry : Iterator)
+    {
+        if (Entry.is_regular_file())
+        {
+            std::filesystem::path RelativePath = std::filesystem::relative(Entry.path(), CardImageFolder);
+            if (!RelativePath.empty())
+            {
+                std::string Rarity = (*RelativePath.begin()).generic_string();
+                std::string Resource = RelativePath.generic_string();
+                m_Rarities[Rarity].emplace_back(Resource);
+                m_TotalCards.emplace_back(Resource);
+            }
+        }
+    }
+}
+
+template<typename T,typename RNG>
+static T const& SampleRandom(std::vector<T> const& Cards, RNG& rng)
+{
+    std::uniform_int_distribution<int> Distrib(0, Cards.size() - 1);
+    return Cards[Distrib(rng)];
+}
+
+std::vector<std::string> MTGPackGenerator::operator()() {
+    std::vector<std::string> returnValue;
+    if (m_UsePacks)
+    {
+        auto& Mythics = m_Rarities["mythic"];
+        auto& Rares = m_Rarities["rare"];
+        auto& Uncommons = m_Rarities["uncommon"];
+        auto& Commons = m_Rarities["common"];
+        std::uniform_real_distribution<float> RealDistrib(0,1);
+        if (RealDistrib(*m_RNG) <= 1 / 7.4)
+        {
+            returnValue.emplace_back(SampleRandom(Mythics, *m_RNG));
+        }
+        else {
+            returnValue.emplace_back(SampleRandom(Rares, *m_RNG));
+        }
+        for (int i = 0; i < 3; i++)
+        {   
+            returnValue.emplace_back(SampleRandom(Uncommons, *m_RNG));
+        }
+        for(int i = 0; i < 11;i++)
+        {
+            returnValue.emplace_back(SampleRandom(Commons, *m_RNG));
+
+        }
+
+    }
+    else 
+    {
+        std::uniform_int_distribution<int> Distrib(0, m_TotalCards.size() - 1);
+        for (int i = 0; i < 15; i++)
+        {
+            returnValue.emplace_back(m_TotalCards[Distrib(*m_RNG)]);
+        }
+    }
+    return returnValue;
+}
+
+
 using json = nlohmann::json;
 /// <summary>
-/// servern som startas från main loopen 
+/// servern som startas frï¿½n main loopen 
 /// </summary>
 /// <param name="entryPoint"></param>
-void DraftServer::Start(const std::string& entryPoint)
+void DraftServer::Start(const std::string& entryPoint,std::vector<std::string> argv)
 {
 
     pointOfEntry = entryPoint;
     svr.set_mount_point("/", pointOfEntry);
 
-    LoadAvailableCards();
-    //Sätter alla http requests 
+    PackFunc PackCreationFunc;
+    if(std::find(argv.begin(),argv.end(), "--mtg") != argv.end())
+    {
+        bool UsePacks = std::find(argv.begin(), argv.end(), "--packs") != argv.end();
+        PackCreationFunc = MTGPackGenerator(pointOfEntry, UsePacks);
+    }
+    else {
+        LoadAvailableCards();
+    }
+    //Sï¿½tter alla http requests 
     const char* dataBasePath = "D:\\DraftWebsite\\DraftWebsite\\DraftWebsiteServer\\UserDatabase.db";
     
     sqlite3* databaseHandle = nullptr; 
@@ -31,7 +107,8 @@ void DraftServer::Start(const std::string& entryPoint)
 
     }
 
-    //REquesten för att få alla resurser som css och bilder och dylikt
+
+    //REquesten fï¿½r att fï¿½ alla resurser som css och bilder och dylikt
     svr.Get("/", [&](const httplib::Request& req, Response& res) {
         std::cout << "hej getta html" << std::endl;
         std::cout << " Cookie " << req.get_header_value("Cookie") << std::endl;
@@ -71,7 +148,7 @@ void DraftServer::Start(const std::string& entryPoint)
         });
 
 
-    //requesten som behandlar alla pollande uppdateringar från klienten. Avgör requesten utifrån bodyn och returnar utefter det korrosponerande json fil
+    //requesten som behandlar alla pollande uppdateringar frï¿½n klienten. Avgï¿½r requesten utifrï¿½n bodyn och returnar utefter det korrosponerande json fil
     svr.Post("/Update", [&](const httplib::Request& req, Response& res) {
 
         //std::string stringToReturn = "";
@@ -138,7 +215,7 @@ void DraftServer::Start(const std::string& entryPoint)
 
         res.set_content("", "text/plain");
         });
-    //Requesten som behandlar när en spelare vill se kortet de har tagit digiare
+    //Requesten som behandlar nï¿½r en spelare vill se kortet de har tagit digiare
     svr.Get("/PickedCards", [&](const httplib::Request& req, Response& res) {
 
         std::string stringToReturn = "";
@@ -158,7 +235,7 @@ void DraftServer::Start(const std::string& entryPoint)
 
         });
 
-    //Requesten som behandlar när en spelare vill hosta en lobby
+    //Requesten som behandlar nï¿½r en spelare vill hosta en lobby
     svr.Post("/HostLobby", [&](const httplib::Request& req, Response& res) {
   
             std::string playerId = req.get_header_value("Cookie");
@@ -195,7 +272,7 @@ void DraftServer::Start(const std::string& entryPoint)
             if (shouldHostLobby && parsingSuccessful)
             {   
                 message["Accepted"] = true; 
-                message["LobbyId"] = HostLobby(playerId,cardPerMainDeckPack,cardPerExtraDeckPack,amountOfPacks);
+                message["LobbyId"] = HostLobby(playerId,cardPerMainDeckPack,cardPerExtraDeckPack,amountOfPacks,PackCreationFunc);
                 res.set_content(message.dump(), "text/plain");
             }
             else
@@ -214,7 +291,7 @@ void DraftServer::Start(const std::string& entryPoint)
 
             //std::cout << "host grejen " << playerId << std::endl;
         });
-    //Requesten som behandlar när en spelare vill starta lobbyn. Går bara om man är spelaren som hostade lobbyn
+    //Requesten som behandlar nï¿½r en spelare vill starta lobbyn. Gï¿½r bara om man ï¿½r spelaren som hostade lobbyn
     svr.Post("/StartLobby", [&](const httplib::Request& req, Response& res) {
 
         std::string playerId = req.get_header_value("Cookie");
@@ -240,7 +317,7 @@ void DraftServer::Start(const std::string& entryPoint)
         }
        // std::cout << "start grejen " << playerId << std::endl;
         });
-    //Requesten som behandlar när en spelare vill gå med en lobby. Man kan bara vara med i en lobby samtidigt
+    //Requesten som behandlar nï¿½r en spelare vill gï¿½ med en lobby. Man kan bara vara med i en lobby samtidigt
 
     svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {    
         std::string playerId = req.get_header_value("Cookie");
@@ -282,7 +359,7 @@ void DraftServer::Start(const std::string& entryPoint)
     //    std::cout << "join grejen " <<playerId  << std::endl;
         });
 
-    //metoden när en spelare vill ta ett kort som är tillgängligt till dom 
+    //metoden nï¿½r en spelare vill ta ett kort som ï¿½r tillgï¿½ngligt till dom 
     svr.Post("/PickCard", [&](const httplib::Request& req, Response& res) {
         std::string playerId = req.get_header_value("Cookie");
         int index = -1;
@@ -315,13 +392,13 @@ void DraftServer::Start(const std::string& entryPoint)
     svr.listen("0.0.0.0", 1234);
 }
 
-//laddar in korten för bilderna utifrån en lokal resurs
+//laddar in korten fï¿½r bilderna utifrï¿½n en lokal resurs
 void DraftServer::LoadAvailableCards()
 {
     std::string mainDeckEntry = pointOfEntry;
     std::string extraDeckEntry = pointOfEntry;
-    std::filesystem::path mainDeckImagesPath = std::filesystem::path(mainDeckEntry.append("\\CardImages\\MainDeck"));
-    std::filesystem::path extraDeckImagesPath = std::filesystem::path(extraDeckEntry.append("\\CardImages\\ExtraDeck"));
+    std::filesystem::path mainDeckImagesPath = std::filesystem::path(mainDeckEntry.append("/CardImages/MainDeck"));
+    std::filesystem::path extraDeckImagesPath = std::filesystem::path(extraDeckEntry.append("/CardImages/ExtraDeck"));
 
     for (auto const& card : std::filesystem::directory_iterator{mainDeckImagesPath})
     {
@@ -338,13 +415,13 @@ void DraftServer::LoadAvailableCards()
 }
 
 
-//metoden för när man hosta en lobby
-std::string DraftServer::HostLobby(const std::string& playerId, int mainDeckCardsPerPack, int extraDeckCardsPerPack, int amountOfPacks)
+//metoden fï¿½r nï¿½r man hosta en lobby
+std::string DraftServer::HostLobby(const std::string& playerId, int mainDeckCardsPerPack, int extraDeckCardsPerPack, int amountOfPacks,PackFunc Func)
 {   
 
     std::lock_guard<std::mutex> lockGuard(serverMutex);
      
-    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId,mainDeckCardsPerPack, amountOfPacks,true,extraDeckCardsPerPack);
+    activeLobbies[std::to_string(lobbyId)] = Lobby(playerId,mainDeckCardsPerPack, amountOfPacks,true,extraDeckCardsPerPack,std::move(Func));
 //    activeLobbies[std::to_string(lobbyId)].StartLobby(availableMainDeckCards);
     playerToLobby[playerId] =  std::to_string(lobbyId);
     lobbyId += 1;
@@ -374,7 +451,7 @@ void DraftServer::RemoveInactiveLobbies()
     }
 
 }
-//ofärdig metod för när man ska ta bort en lobby
+//ofï¿½rdig metod fï¿½r nï¿½r man ska ta bort en lobby
 void DraftServer::RemoveLobby(const std::string& lobbyId)
 {   
     std::lock_guard<std::mutex> lockGuard(serverMutex);
