@@ -32,7 +32,7 @@ private:
     void LoadAvailableCards();
     void RemoveInactiveLobbies();
     void RemoveLobby(const std::string& lobbyId);
-    void GiveCookie(const Request& req, Response& res);
+    std::string GiveCookie(const Request& req, Response& res);
     
     void ServeHTML(const Request& req, Response& res, const std::string& htmlPath);
     std::string HostLobby(const std::string& playerId, int mainDeckCardsPerPack, int extraDeckCardsPerPack, int amountOfPacks);

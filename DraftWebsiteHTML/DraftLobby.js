@@ -42,8 +42,9 @@ continueHasLobbyStarted = true;
 
 startLobbyButton.onclick = StartLobby;
 
-UpdateJoinedPlayers();
-UpdateLobbyStarted();
+JoinLobby();
+//UpdateJoinedPlayers();
+//UpdateLobbyStarted();
 //UpdateDraftableCardsLoop();
 
 async function HostLobby()
@@ -79,18 +80,24 @@ async function HostLobby()
 }
 
 async function JoinLobby()
-{
-    response = await fetch("/JoinLobby",{
+{   
+    const queryString = window.location.search;
+    console.log(queryString);
+    const urlParams = new URLSearchParams(queryString);
+
+
+    response = await fetch("/JoinLobby?=" + urlParams.get('LobbyId'),{
         method: "Post",
-        body: joinInput.value
+        body: "joinInput.value"
         }).then((response) => response.text()).then((text) => {
             if(text == "Accepted")
             {
-                startForm.remove();
-                UpdateJoinedPlayers();
-                UpdateLobbyStarted();
+                //startForm.remove();
+                //UpdateJoinedPlayers();
+                //UpdateLobbyStarted();
             }
-
+            UpdateJoinedPlayers();
+            UpdateLobbyStarted();
             //console.log(text);
           });
 }
@@ -177,7 +184,6 @@ async function UpdateJoinedPlayers()
                     paragraph.textContent = message[i];
                     playersJoinedArea.append(paragraph);
                 }
-                console.log(message);
                 if(json["IsHost"])
                 {
                     startLobbyButton.hidden = false;
@@ -240,7 +246,8 @@ function sleep(ms) {
 
 
 function DraftableCardsFromServer( textArray)
-{
+{   
+    console.log("hur stort är packet " + textArray.length);
     for(i = 0; i < textArray.length;i++)
     {
         CreateDraftableCard(textArray[i],i);
@@ -330,7 +337,6 @@ function CreateDraftableCard(cardName, index)
 
     card.append(cardImage);
 
-    console.log("CardImages/" + cardName);
 
     cardImage.className = "DraftableCard";
 
@@ -421,6 +427,7 @@ async function UpdateDraftedCards()
                 message = text.split(":");
                 
                 sortedList = ReturnSortedDraftedCards(message);
+                console.log("hur mycket kort har jag draftat tidigare " + sortedList.length);
                 for(i = 0; i < sortedList.length; i++)
                 {
                     AddCardToDraftPile(sortedList[i]);
@@ -466,17 +473,12 @@ function TrimCardArray(listToSearch, stringToMatch)
     let listToReturn = [];
     for(i = 0; i < listToSearch.length; i++)
     {
-        console.log("vad searchas")
-        console.log(listToSearch[i]);
         if(listToSearch[i].includes(stringToMatch))
         {
-            console.log("har hittats")
 
             removedJPG = listToSearch[i].split(".");
-            console.log(removedJPG);
             removedPath = removedJPG[0].split(stringToMatch);
          //   removeComma = removedPath.slice(0,1);
-            console.log(removedPath)
             listToReturn.push(removedPath[1]);
         }
     }

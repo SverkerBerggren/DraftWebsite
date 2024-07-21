@@ -1,4 +1,5 @@
 #include "Lobby.h"
+#include <assert.h>
 #include <algorithm>
 #include <random>
 //Lobby �r objektet f�r de lobbies av spelare som skapas
@@ -49,7 +50,7 @@ void Lobby::PickCard(const std::string &playerId, int index)
 void Lobby::RotatePacks(bool allPlayersHavePicked)
 {
 	UpdateTimeStamp();
-
+	bool shouldCreatePacks = false;
 	{
 		std::lock_guard<std::mutex> lockGuard(*lobbyMutex);
 
@@ -70,11 +71,36 @@ void Lobby::RotatePacks(bool allPlayersHavePicked)
 			playerHavePicked[playerPicked.first] = false;
 		}
 
+		shouldCreatePacks = playerPacks[playerPacks.begin()->first].size() == 0;
+		int PlayerPackSize = -1;
+		int CardSum = 0;
+		for (auto const& PlayerPack : playerPacks)
+		{
+			if (PlayerPackSize == -1) {
+				PlayerPackSize = PlayerPack.second.size();
+			}
+			else {
+				assert(PlayerPackSize == PlayerPack.second.size());
+			}
+			CardSum += PlayerPack.second.size();
+		}
+		int pickCardSize = -1;
+		for (auto const& Pack : pickedCards)
+		{
+			if (pickCardSize == -1) { pickCardSize == Pack.second.size(); }
+			else 
+			{
+				assert(pickCardSize == Pack.second.size()); 
+			}
+			CardSum += Pack.second.size();
+		}
+		assert(CardSum == (packsCreated * 15 * playerPacks.size()));
 	}
-	if (playerPacks[playerPacks.begin()->first].size() == 0 )
+	if (shouldCreatePacks)
 	{
 		CreatePacks();
 	}
+	
 }
 
 //oanv�nd metod

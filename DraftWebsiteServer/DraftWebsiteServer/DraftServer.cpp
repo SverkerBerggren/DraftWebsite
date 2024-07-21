@@ -112,19 +112,27 @@ void DraftServer::Start(const std::string& entryPoint,std::vector<std::string> a
     svr.Get("/", [&](const httplib::Request& req, Response& res) {
         std::cout << "hej getta html" << std::endl;
         std::cout << " Cookie " << req.get_header_value("Cookie") << std::endl;
-        GiveCookie(req, res);
+        //GiveCookie(req, res);
         ServeHTML(req, res, "RootSite.html");
         std::cout << "hur manga lobbies " << std::to_string(activeLobbies.size()) << std::endl;
        // std::cout << html.size() << std::endl;
         });
+
+    svr.Post("/GetCookie", [&](const httplib::Request& req, Response& res) {
+        if (req.get_header_value("Cookie")== "")
+        {
+            GiveCookie(req,res);
+        }
+        });
+
     svr.Get("/DraftLobby", [&](const httplib::Request& req, Response& res) {
-        GiveCookie(req,res);
-        //ServeHTML(req, res,"DraftLobby.html");
+        //std::string cookie = GiveCookie(req,res);
+        ServeHTML(req, res,"DraftLobby.html");
         std::string playerId = req.get_header_value("Cookie");
         json message;
-        if (!req.has_param("LobbyId"))
+        if (!req.has_param("LobbyId") || playerId =="")
         {
-            res.set_content("knas", "text/plain");
+            ServeHTML(req, res, "DraftLobby.html");
             return; 
         }
 
@@ -151,6 +159,7 @@ void DraftServer::Start(const std::string& entryPoint,std::vector<std::string> a
                     }
                     else
                     {
+                        assert(playerId != "");
                         playerToLobby[playerId] = lobbyId;
                         iterator->second.AddConnectedPlayer(playerId);
                         //res.set_content("Accepted", "text/plain");
@@ -348,7 +357,7 @@ void DraftServer::Start(const std::string& entryPoint,std::vector<std::string> a
     //Requesten som behandlar n�r en spelare vill g� med en lobby. Man kan bara vara med i en lobby samtidigt
 
     svr.Post("/JoinLobby", [&](const httplib::Request& req, Response& res) {    
-            JoinLobby(req, res);
+           JoinLobby(req, res);
     //    std::cout << "join grejen " <<playerId  << std::endl;
         });
 
@@ -493,7 +502,15 @@ void DraftServer::RemoveLobby(const std::string& lobbyId)
 void DraftServer::JoinLobby(const Request& req, Response& res)
 {
     std::string playerId = req.get_header_value("Cookie");
-    std::string lobbyId = req.body;
+
+    if (!req.has_param("LobbyId"))
+    {
+        res.set_content("nej", "text/plain");
+    }
+
+    GiveCookie(req, res);
+
+    std::string lobbyId = req.get_param_value("LobbyId");
      
 
     std::lock_guard<std::mutex> lock = std::lock_guard(serverMutex);
@@ -511,7 +528,7 @@ void DraftServer::JoinLobby(const Request& req, Response& res)
                 }
                 else
                 {
-                    playerToLobby[playerId] = req.body;
+                    playerToLobby[playerId] = lobbyId;
                     iterator->second.AddConnectedPlayer(playerId);
                     res.set_content("Accepted", "text/plain");
 
@@ -530,7 +547,7 @@ void DraftServer::JoinLobby(const Request& req, Response& res)
     }
 }
 
-void DraftServer::GiveCookie(const Request& req, Response& res)
+std::string DraftServer::GiveCookie(const Request& req, Response& res)
 {
 
     if (req.get_header_value("Cookie") == "")
@@ -545,10 +562,12 @@ void DraftServer::GiveCookie(const Request& req, Response& res)
             {
                 std::string stringGUID((char*)rpcGUID);
                 RpcStringFreeA(&rpcGUID);
-                res.set_header("Set-Cookie", "PlayerId = " + stringGUID + "; Expires=Thu, 25 Okt 2024 07:28:00 GMT;SameSite=None");
+                res.set_header("Set-Cookie", "PlayerId = " + stringGUID + "; Expires=Thu, 25 Okt 2024 07:28:00 GMT");
+                return "PlayerId=" +stringGUID;
             }
         }
     }
+    return req.get_header_value("Cookie");
 }
 void DraftServer::ServeHTML(const Request& req, Response& res, const std::string& htmlPath )
 {
